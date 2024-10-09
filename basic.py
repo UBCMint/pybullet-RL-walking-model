@@ -39,10 +39,22 @@ p.changeDynamics(boxId, -1, lateralFriction=2.0)
 
 # Set initial angle for legs to start at 45 degrees
 initial_angle = math.pi / 4  # 45 degrees in radians
-p.resetJointState(boxId, 0, -initial_angle)
-p.resetJointState(boxId, 2, -initial_angle)
-p.resetJointState(boxId, 1, initial_angle)
-p.resetJointState(boxId, 3, initial_angle)
+
+prismatic_joints = [0, 2, 4, 6]  # Prismatic joints for front_left, front_right, back_left, back_right
+prismatic_initial_height = -0.1  # Initial height for the prismatic joints (lowered by 0.2 meters)
+
+# Adjust the prismatic joints to lower the legs
+for joint in prismatic_joints:
+    p.resetJointState(boxId, joint, prismatic_initial_height)
+    
+# Joint indexes for rotational joints only (ignoring prismatic joints)
+rotational_joints = [1, 3, 5, 7]  # Continuous joints for front_left, front_right, back_left, back_right
+
+# Set the initial angle for all the rotational joints
+p.resetJointState(boxId, rotational_joints[0], -initial_angle)  # front_left_leg
+p.resetJointState(boxId, rotational_joints[2], -initial_angle)  # back_left_leg
+p.resetJointState(boxId, rotational_joints[1], initial_angle)   # front_right_leg
+p.resetJointState(boxId, rotational_joints[3], initial_angle)   # back_right_leg
 
 def update_camera(robot_id, camera_distance=2):
     # Get the current position of the robot
@@ -66,7 +78,7 @@ def move_joints_to_velocity(robot_id, joint_velocities, force=200):
     for joint_index, velocity in enumerate(joint_velocities):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
-            jointIndex=joint_index,
+            jointIndex=rotational_joints[joint_index],  # Only controlling the rotational joints
             controlMode=p.VELOCITY_CONTROL,
             targetVelocity=velocity,
             force=force
@@ -84,11 +96,11 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
     """
 
     # Split the legs into two groups for alternating movements
-    left_legs = [0, 2]  # Assuming joint 0 and 2 are left legs
-    right_legs = [1, 3]  # Assuming joint 1 and 3 are right legs
+    left_legs = [0, 2]  # Assuming joints 1 and 5 are left legs
+    right_legs = [1, 3]  # Assuming joints 3 and 7 are right legs
 
     # Step 1: Move left legs forward (toward +45 degrees), right legs backward (toward -45 degrees)
-    joint_velocities = [reset_velocity] * num_joints
+    joint_velocities = [reset_velocity] * len(rotational_joints)
     for leg in left_legs:
         joint_velocities[leg] = step_velocity  # Move left legs forward (to +45 degrees)
     for leg in right_legs:
@@ -117,12 +129,12 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
         time.sleep(1./500.)
 
     # Step 3: Reset all legs to the initial position using zero velocity (to maintain consistency)
-    joint_velocities = [reset_velocity] * num_joints
+    joint_velocities = [reset_velocity] * len(rotational_joints)
     move_joints_to_velocity(robot_id, joint_velocities, force)
 
 # Run the simulation for a specified number of steps to move forward with smoother motion
 for _ in range(500):  # Main loop with adjusted motion
-    perform_fast_walking_motion(boxId, num_joints, step_velocity=9.0, force=8)
+    perform_fast_walking_motion(boxId, num_joints, step_velocity=9.0, force=16)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
