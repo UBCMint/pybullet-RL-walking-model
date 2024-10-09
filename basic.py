@@ -2,6 +2,7 @@ import pybullet as p
 import pybullet_data
 import time
 import os
+import math
 
 # Get the current directory and URDF path
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -18,10 +19,10 @@ p.setGravity(0, 0, -10)
 planeId = p.loadURDF('plane.urdf')
 
 # Set a larger time step to increase the speed of joint movements
-p.setTimeStep(1./500.)  # Use 1/500 for a faster simulation speed
+p.setTimeStep(1. / 240.)
 
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.05]
+cubeStartPos = [0, 0, 0.2]  # Lift the robot a bit higher initially
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
@@ -32,84 +33,81 @@ num_joints = p.getNumJoints(boxId)
 print(f"Number of joints: {num_joints}")
 
 # Increase the friction for the ground to reduce slipping
-p.changeDynamics(planeId, -1, lateralFriction=5.0)
+p.changeDynamics(planeId, -1, lateralFriction=10.0)  # Increased friction value
+
+# Set up initial dynamics for the robot's legs to ensure good ground contact
+for joint in range(num_joints):
+    p.changeDynamics(boxId, joint, lateralFriction=5.0)  # Increased friction for legs
+    p.changeDynamics(boxId, joint, jointDamping=0.5)  # Damping to reduce vibrations
 
 # Print joint information for debugging and mapping
 for i in range(num_joints):
     joint_info = p.getJointInfo(boxId, i)
     print(f"Joint {i}: Name={joint_info[1].decode('utf-8')} Type={joint_info[2]}")
 
-# Function to move joints with velocity control for faster motion
-def move_joints_to_velocity(robot_id, joint_velocities, force=100):
+# Function to move joints using position control for smoother motion
+def move_joints_to_position(robot_id, joint_positions, max_force=50):
     """
-    Move the robot's joints using velocity control to speed up the movements.
+    Move the robot's joints using position control.
     :param robot_id: ID of the robot in the simulation.
-    :param joint_velocities: List of target velocities for each joint.
-    :param force: Force applied to the joint motors.
+    :param joint_positions: List of target positions for each joint.
+    :param max_force: Maximum force applied to each joint motor.
     """
-    for joint_index, velocity in enumerate(joint_velocities):
+    for joint_index, position in enumerate(joint_positions):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
             jointIndex=joint_index,
-            controlMode=p.VELOCITY_CONTROL,
-            targetVelocity=velocity,
-            force=force
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=position,
+            force=max_force
         )
 
-# Function to create a consistent walking motion in one direction with higher speed
-def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_velocity=0.0, force=100):
+# Function to create a consistent walking motion with sinusoidal patterns
+def perform_gait_motion(robot_id, num_joints, step_length=0.3, step_height=0.2, speed=0.1):
     """
-    Perform a faster walking motion using velocity control for coordinated leg movements.
+    Perform a simple alternating gait motion using sinusoidal control for coordinated leg movements.
     :param robot_id: ID of the robot in the simulation.
     :param num_joints: Number of joints to control.
-    :param step_velocity: Target velocity for the legs during each step.
-    :param reset_velocity: Target velocity to reset the legs to the initial position.
-    :param force: Force applied to the joint motors.
+    :param step_length: Amplitude of the movement forward and backward.
+    :param step_height: Amplitude of the upward and downward movement.
+    :param speed: Speed of the leg movements.
     """
+    phase_offset = math.pi  # Offset for alternating legs (180 degrees)
 
-    # Split the legs into two groups for alternating movements
-    left_legs = [0, 1]  # Assuming joint 0 and 2 are left legs
-    right_legs = [2, 3]  # Assuming joint 1 and 3 are right legs
+    # Assign indices of the legs to create a trot gait pattern
+    left_legs = [0, 2]  # Left legs joint indices
+    right_legs = [1, 3]  # Right legs joint indices
 
-    # Step 1: Move left legs forward, right legs backward using velocity control
-    joint_velocities = [reset_velocity] * num_joints
-    for leg in left_legs:
-        joint_velocities[leg] = step_velocity  # Move left legs forward
-    for leg in right_legs:
-        joint_velocities[leg] = -step_velocity  # Move right legs backward
+    time_step = 0
 
-    move_joints_to_velocity(robot_id, joint_velocities, force)
+    # Run the gait for a specified number of steps
+    for _ in range(1000):
+        time_step += speed
 
-    # Simulate for a few steps to see the effect
-    for _ in range(100):  # Fewer simulation steps for faster movement
+        # Calculate joint positions based on a simple sinusoidal function for each leg
+        joint_positions = [0] * num_joints
+        for joint in left_legs:
+            # Moving left legs in a sinusoidal pattern
+            joint_positions[joint] = step_length * math.sin(time_step)  # Move forward/backward
+            joint_positions[joint] += step_height * math.cos(time_step)  # Move up/down
+
+        for joint in right_legs:
+            # Moving right legs in the opposite phase of left legs
+            joint_positions[joint] = step_length * math.sin(time_step + phase_offset)
+            joint_positions[joint] += step_height * math.cos(time_step + phase_offset)
+
+        # Apply the positions to the joints using position control
+        move_joints_to_position(robot_id, joint_positions)
+
+        # Apply a small forward force to the robot's base link to encourage movement
+        p.applyExternalForce(robot_id, -1, [50, 0, 0], [0, 0, 0], p.WORLD_FRAME)  # Adjust force as needed
+
+        # Step the simulation forward to see the effect
         p.stepSimulation()
-        time.sleep(1./500.)
+        time.sleep(1. / 240.)
 
-    # Step 2: Move left legs backward, right legs forward (opposite motion) using velocity control
-    for leg in left_legs:
-        joint_velocities[leg] = -step_velocity  # Move left legs backward
-    for leg in right_legs:
-        joint_velocities[leg] = step_velocity  # Move right legs forward
-
-    move_joints_to_velocity(robot_id, joint_velocities, force)
-
-    # Simulate for a few steps to see the effect
-    for _ in range(100):
-        p.stepSimulation()
-        time.sleep(1./500.)
-
-    # Step 3: Reset all legs to the initial position using zero velocity
-    joint_velocities = [reset_velocity] * num_joints
-    move_joints_to_velocity(robot_id, joint_velocities, force)
-
-    # Simulate for a few steps to see the effect
-    for _ in range(50):
-        p.stepSimulation()
-        time.sleep(1./500.)
-
-# Run the simulation for a specified number of steps to move forward with faster motion
-for _ in range(50):  # Reduce the number of iterations for quicker results
-    perform_fast_walking_motion(boxId, num_joints, step_velocity=9.0, force=8)
+# Run the gait motion
+perform_gait_motion(boxId, num_joints, step_length=0.3, step_height=0.1, speed=0.2)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)

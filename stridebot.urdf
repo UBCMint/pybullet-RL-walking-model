@@ -46,12 +46,12 @@
   </link>
 
   <!-- Joint connecting front left leg to the body -->
-  <joint name="front_left_joint" type="continuous">
+  <joint name="front_left_joint" type="revolute">
     <parent link="base_link"/>
     <child link="front_left_leg"/>
     <origin xyz="0.2 0.15 0" rpy="0 0 0"/> <!-- Position of the joint relative to the body -->
     <axis xyz="0 1 0"/> <!-- Rotation axis -->
-    <limit effort="5.0" velocity="1.0"/>
+    <limit effort="50.0" velocity="5.0" lower="-1.0" upper="1.0"/>
   </joint>
 
   <!-- Front Right Leg -->
@@ -77,12 +77,12 @@
   </link>
 
   <!-- Joint connecting front right leg to the body -->
-  <joint name="front_right_joint" type="continuous">
+  <joint name="front_right_joint" type="revolute">
     <parent link="base_link"/>
     <child link="front_right_leg"/>
     <origin xyz="0.2 -0.15 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="5.0" velocity="1.0"/>
+    <limit effort="50.0" velocity="5.0" lower="-1.0" upper="1.0"/>
   </joint>
 
   <!-- Back Left Leg -->
@@ -108,12 +108,12 @@
   </link>
 
   <!-- Joint connecting back left leg to the body -->
-  <joint name="back_left_joint" type="continuous">
+  <joint name="back_left_joint" type="revolute">
     <parent link="base_link"/>
     <child link="back_left_leg"/>
     <origin xyz="-0.2 0.15 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="5.0" velocity="1.0"/>
+    <limit effort="50.0" velocity="5.0" lower="-1.0" upper="1.0"/>
   </joint>
 
   <!-- Back Right Leg -->
@@ -139,11 +139,11 @@
   </link>
 
   <!-- Joint connecting back right leg to the body -->
-  <joint name="back_right_joint" type="continuous">
+  <joint name="back_right_joint" type="revolute">
     <parent link="base_link"/>
     <child link="back_right_leg"/>
     <origin xyz="-0.2 -0.15 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="5.0" velocity="1.0"/>
+    <limit effort="50.0" velocity="5.0" lower="-1.0" upper="1.0"/>
   </joint>
 </robot>
