@@ -7,9 +7,11 @@ import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 urdf_path = os.path.join(current_dir, 'stridebot.urdf')
 
+
 # Connect to PyBullet
 physicsClient = p.connect(p.GUI)  # Use p.DIRECT for non-graphical version
 
+p.setRealTimeSimulation(0)
 # Set the search path to find built-in URDF files and load the plane
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0, 0, -10)
@@ -33,6 +35,18 @@ print(f"Number of joints: {num_joints}")
 
 # Increase the friction for the ground to reduce slipping
 p.changeDynamics(planeId, -1, lateralFriction=5.0)
+
+def update_camera(robot_id, camera_distance=2):
+    # Get the current position of the robot
+    robot_pos, _ = p.getBasePositionAndOrientation(robot_id)
+
+    # Set camera to follow the robot's base position
+    p.resetDebugVisualizerCamera(
+        cameraDistance=camera_distance,   # Adjust the zoom level
+        cameraYaw=p.getDebugVisualizerCamera()[8],       # Camera angle around the Z-axis
+        cameraPitch=-30,                  # Camera angle up/down
+        cameraTargetPosition=robot_pos    # Set camera target to robot's position
+    )
 
 # Print joint information for debugging and mapping
 for i in range(num_joints):
@@ -83,6 +97,7 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
     # Simulate for a few steps to see the effect
     for _ in range(100):  # Fewer simulation steps for faster movement
         p.stepSimulation()
+        update_camera(robot_id)
         time.sleep(1./500.)
 
     # Step 2: Move left legs backward, right legs forward (opposite motion) using velocity control
@@ -96,6 +111,7 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
     # Simulate for a few steps to see the effect
     for _ in range(100):
         p.stepSimulation()
+        update_camera(robot_id)
         time.sleep(1./500.)
 
     # Step 3: Reset all legs to the initial position using zero velocity
@@ -105,10 +121,11 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
     # Simulate for a few steps to see the effect
     for _ in range(50):
         p.stepSimulation()
+        update_camera(robot_id)
         time.sleep(1./500.)
 
 # Run the simulation for a specified number of steps to move forward with faster motion
-for _ in range(50):  # Reduce the number of iterations for quicker results
+for _ in range(500):  # Reduce the number of iterations for quicker results
     perform_fast_walking_motion(boxId, num_joints, step_velocity=9.0, force=8)
 
 # Get and print the final position and orientation of the robot
