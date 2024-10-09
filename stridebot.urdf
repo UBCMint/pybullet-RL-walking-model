@@ -22,12 +22,11 @@
     </inertial>
   </link>
 
-  <!-- Define each leg -->
   <!-- Front Left Leg -->
   <link name="front_left_leg">
     <visual>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/> <!-- Leg dimensions -->
+        <cylinder length="0.4" radius="0.05"/> <!-- Leg length extended to 0.4 meters -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -35,13 +34,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.2"/>
+      <mass value="0.4"/> <!-- Updated mass due to extended leg -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
 
@@ -49,8 +48,8 @@
   <joint name="front_left_joint" type="continuous">
     <parent link="base_link"/>
     <child link="front_left_leg"/>
-    <origin xyz="0.2 0.15 0" rpy="0 0 0"/> <!-- Position of the joint relative to the body -->
-    <axis xyz="0 1 0"/> <!-- Rotation axis -->
+    <origin xyz="0.2 0.15 -0.1" rpy="0 0 0"/> <!-- Adjusted to account for longer leg -->
+    <axis xyz="0 1 0"/>
     <limit effort="5.0" velocity="1.0"/>
   </joint>
 
@@ -58,7 +57,7 @@
   <link name="front_right_leg">
     <visual>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/> <!-- Leg length extended to 0.4 meters -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -66,13 +65,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.2"/>
+      <mass value="0.4"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
 
@@ -80,7 +79,7 @@
   <joint name="front_right_joint" type="continuous">
     <parent link="base_link"/>
     <child link="front_right_leg"/>
-    <origin xyz="0.2 -0.15 0" rpy="0 0 0"/>
+    <origin xyz="0.2 -0.15 -0.1" rpy="0 0 0"/> <!-- Adjusted to account for longer leg -->
     <axis xyz="0 1 0"/>
     <limit effort="5.0" velocity="1.0"/>
   </joint>
@@ -89,7 +88,7 @@
   <link name="back_left_leg">
     <visual>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/> <!-- Leg length extended to 0.4 meters -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -97,13 +96,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.2"/>
+      <mass value="0.4"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
 
@@ -111,7 +110,7 @@
   <joint name="back_left_joint" type="continuous">
     <parent link="base_link"/>
     <child link="back_left_leg"/>
-    <origin xyz="-0.2 0.15 0" rpy="0 0 0"/>
+    <origin xyz="-0.2 0.15 -0.1" rpy="0 0 0"/> <!-- Adjusted to account for longer leg -->
     <axis xyz="0 1 0"/>
     <limit effort="5.0" velocity="1.0"/>
   </joint>
@@ -120,7 +119,7 @@
   <link name="back_right_leg">
     <visual>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/> <!-- Leg length extended to 0.4 meters -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -128,13 +127,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.2" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.2"/>
+      <mass value="0.4"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
 
@@ -142,7 +141,7 @@
   <joint name="back_right_joint" type="continuous">
     <parent link="base_link"/>
     <child link="back_right_leg"/>
-    <origin xyz="-0.2 -0.15 0" rpy="0 0 0"/>
+    <origin xyz="-0.2 -0.15 -0.1" rpy="0 0 0"/> <!-- Adjusted to account for longer leg -->
     <axis xyz="0 1 0"/>
     <limit effort="5.0" velocity="1.0"/>
   </joint>

@@ -23,7 +23,7 @@ planeId = p.loadURDF('plane.urdf')
 p.setTimeStep(1./500.)  # Use 1/500 for a faster simulation speed
 
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.05]
+cubeStartPos = [0, 0, 0.3]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
@@ -35,6 +35,7 @@ print(f"Number of joints: {num_joints}")
 
 # Increase the friction for the ground to reduce slipping
 p.changeDynamics(planeId, -1, lateralFriction=5.0)
+p.changeDynamics(boxId, -1, lateralFriction=2.0)
 
 # Set initial angle for legs to start at 45 degrees
 initial_angle = math.pi / 4  # 45 degrees in radians
@@ -118,12 +119,6 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
     # Step 3: Reset all legs to the initial position using zero velocity (to maintain consistency)
     joint_velocities = [reset_velocity] * num_joints
     move_joints_to_velocity(robot_id, joint_velocities, force)
-
-    # Simulate for a few steps to see the effect
-    for _ in range(50):
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./500.)
 
 # Run the simulation for a specified number of steps to move forward with smoother motion
 for _ in range(500):  # Main loop with adjusted motion
