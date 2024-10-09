@@ -62,7 +62,7 @@ for i in range(num_joints):
     print(f"Joint {i}: Name={joint_info[1].decode('utf-8')} Type={joint_info[2]}")
 
 # Function to move joints with velocity control for smoother motion
-def move_joints_to_velocity(robot_id, joint_velocities, force=100):
+def move_joints_to_velocity(robot_id, joint_velocities, force=200):
     for joint_index, velocity in enumerate(joint_velocities):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
