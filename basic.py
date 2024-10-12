@@ -84,20 +84,26 @@ def move_joints_to_velocity(robot_id, joint_velocities, force=200):
             force=force
         )
 
+# Function to move prismatic joints to lift or lower legs
+def move_prismatic_joints(robot_id, target_positions, force=200):
+    for joint_index, position in enumerate(target_positions):
+        p.setJointMotorControl2(
+            bodyUniqueId=robot_id,
+            jointIndex=prismatic_joints[joint_index],  # Only controlling prismatic joints
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=position,  # Set target height for the legs
+            force=force
+        )
+
 # Function to create a consistent walking motion between -45 degrees and +45 degrees
 def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_velocity=0.0, force=100):
-    """
-    Perform a faster walking motion using velocity control for coordinated leg movements.
-    :param robot_id: ID of the robot in the simulation.
-    :param num_joints: Number of joints to control.
-    :param step_velocity: Target velocity for the legs during each step.
-    :param reset_velocity: Target velocity to reset the legs to the initial position.
-    :param force: Force applied to the joint motors.
-    """
 
     # Split the legs into two groups for alternating movements
     left_legs = [0, 2]  # Assuming joints 1 and 5 are left legs
     right_legs = [1, 3]  # Assuming joints 3 and 7 are right legs
+
+    prismatic_positions = [-0.7, -1, -0.7, -1]  # Lift right legs, lower left legs
+    #move_prismatic_joints(robot_id, prismatic_positions, force)
 
     # Step 1: Move left legs forward (toward +45 degrees), right legs backward (toward -45 degrees)
     joint_velocities = [reset_velocity] * len(rotational_joints)
@@ -113,6 +119,9 @@ def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_
         p.stepSimulation()
         update_camera(robot_id)
         time.sleep(1./500.)
+    
+    prismatic_positions = [-1, -0.7, -1, -0.7]  # Lift left legs, lower right legs
+    #move_prismatic_joints(robot_id, prismatic_positions, force)
 
     # Step 2: Move left legs backward (toward -45 degrees), right legs forward (toward +45 degrees)
     for leg in left_legs:
