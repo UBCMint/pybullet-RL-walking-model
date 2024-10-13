@@ -131,7 +131,7 @@ def joints_reached_target(robot_id, target_positions):
     return True
 
 # Function to create a consistent walking motion between -45 degrees and +45 degrees with only angle checks
-def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=60):
+def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=25):
     # Split the legs into two groups for alternating movements
     left_legs = [0, 2]  # Left legs (rotational joints 0 and 2)
     right_legs = [1, 3]  # Right legs (rotational joints 1 and 3)
