@@ -11,7 +11,7 @@ urdf_path = os.path.join(current_dir, 'stridebot.urdf')
 # Connect to PyBullet
 physicsClient = p.connect(p.GUI)  # Use p.DIRECT for non-graphical version
 
-p.setRealTimeSimulation(0)
+p.setRealTimeSimulation(1)
 # Set the search path to find built-in URDF files and load the plane
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0, 0, -10)
@@ -23,7 +23,7 @@ planeId = p.loadURDF('plane.urdf')
 p.setTimeStep(1./500.)  # Use 1/500 for a faster simulation speed
 
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.9]
+cubeStartPos = [0, 0, 0.3]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
@@ -34,8 +34,11 @@ num_joints = p.getNumJoints(boxId)
 print(f"Number of joints: {num_joints}")
 
 # Increase the friction for the ground to reduce slipping
-p.changeDynamics(planeId, -1, lateralFriction=5.0)
-p.changeDynamics(boxId, -1, lateralFriction=2.0)
+p.changeDynamics(planeId, -1, lateralFriction=10.0)  # Increased friction value
+
+# Set up initial dynamics for the robot's legs to ensure good ground contact
+for joint in range(num_joints):
+    p.changeDynamics(boxId, joint, lateralFriction=5.0)  # Increased friction for legs
 
 # Set initial angle for legs to start at 45 degrees
 initial_angle = math.pi / 4  # 45 degrees in radians
@@ -80,6 +83,7 @@ def move_joints_to_target_position(robot_id, target_positions, force=200):
             bodyUniqueId=robot_id,
             jointIndex=rotational_joints[joint_index],  # Only controlling rotational joints
             controlMode=p.POSITION_CONTROL,
+            maxVelocity=2,
             targetPosition=position,  # Target position in radians
             force=force,
             positionGain=0.1  # Optional: Adjust gain for smoother control
@@ -96,13 +100,42 @@ def move_prismatic_joints(robot_id, target_positions, force=200):
             force=force
         )
 
+def get_link_index_by_name(robot_id, link_name):
+    num_joints = p.getNumJoints(robot_id)
+    for i in range(num_joints):
+        joint_info = p.getJointInfo(robot_id, i)
+        current_link_name = joint_info[12].decode('utf-8')  # Link name is stored at index 12
+        if current_link_name == link_name:
+            print(f"Index is  {i}")
+            return i
+    return None  # Return None if the link name is not found
+
+# Function to change the friction for a link by its name
+def change_leg_friction_by_name(robot_id, link_name, friction_value):
+    link_index = get_link_index_by_name(robot_id, link_name)
+    if link_index is not None:
+        p.changeDynamics(robot_id, link_index, lateralFriction=friction_value)
+        print(f"Changed friction for {link_name} (index {link_index}) to {friction_value}")
+    else:
+        print(f"Link name {link_name} not found.")
+
 # Function to create a consistent walking motion between -45 degrees and +45 degrees
-def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=30):
+# Function to check if all joints have reached the target positions
+def joints_reached_target(robot_id, target_positions):
+    for joint_index, target_position in enumerate(target_positions):
+        joint_state = p.getJointState(robot_id, rotational_joints[joint_index])
+        current_position = joint_state[0]  # Joint position is the first element in the tuple
+        # Check if the current position is close to the target position (tolerance of 0.05 radians)
+        if abs(current_position - target_position) > 0.05:
+            return False
+    return True
+
+# Function to create a consistent walking motion between -45 degrees and +45 degrees with only angle checks
+def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=60):
     # Split the legs into two groups for alternating movements
     left_legs = [0, 2]  # Left legs (rotational joints 0 and 2)
     right_legs = [1, 3]  # Right legs (rotational joints 1 and 3)
 
-    # Step 1: Move left legs to +45 degrees (forward), right legs to -45 degrees (backward)
     while True:
         # Step 1: Move left legs to +45 degrees (forward), right legs to -45 degrees (backward)
         joint_positions = [0] * len(rotational_joints)
@@ -110,11 +143,24 @@ def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, forc
             joint_positions[leg] = step_angle  # Left legs forward to +45 degrees
         for leg in right_legs:
             joint_positions[leg] = -step_angle  # Right legs backward to -45 degrees
+
+        # Adjust friction for the legs
+        change_leg_friction_by_name(boxId, "front_right_leg", 5)
+        change_leg_friction_by_name(boxId, "back_right_leg", 5)
+        change_leg_friction_by_name(boxId, "front_left_leg", 0.2)
+        change_leg_friction_by_name(boxId, "back_left_leg", 0.2)
         
+        # Move the joints to the target positions
         move_joints_to_target_position(robot_id, joint_positions, force)
 
         # Simulate for a portion of the cycle to observe movement
-        for _ in range(steps_per_cycle):  # Adjust number of steps per cycle
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./500.)
+
+        # Wait until all joints have reached the target positions (angle check only)
+        while not joints_reached_target(robot_id, joint_positions):
             p.stepSimulation()
             update_camera(robot_id)
             time.sleep(1./500.)
@@ -124,7 +170,14 @@ def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, forc
             joint_positions[leg] = -step_angle  # Left legs backward to -45 degrees
         for leg in right_legs:
             joint_positions[leg] = step_angle  # Right legs forward to +45 degrees
+
+        # Adjust friction for the legs
+        change_leg_friction_by_name(boxId, "front_right_leg", 0.2)
+        change_leg_friction_by_name(boxId, "back_right_leg", 0.2)
+        change_leg_friction_by_name(boxId, "front_left_leg", 5)
+        change_leg_friction_by_name(boxId, "back_left_leg", 5)
         
+        # Move the joints to the target positions
         move_joints_to_target_position(robot_id, joint_positions, force)
 
         # Simulate for a portion of the cycle to observe movement
@@ -133,9 +186,16 @@ def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, forc
             update_camera(robot_id)
             time.sleep(1./500.)
 
+        # Wait until all joints have reached the target positions (angle check only)
+        while not joints_reached_target(robot_id, joint_positions):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./500.)
+
+
 # Run the simulation for a specified number of steps to m-ove forward with smoother motion
-for _ in range(500):  # Main loop with adjusted motion
-    perform_fast_walking_motion(boxId, num_joints, step_angle=math.pi/4, force=16)
+
+perform_fast_walking_motion(boxId, num_joints, step_angle=math.pi/4, force=16)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
