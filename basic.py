@@ -23,7 +23,7 @@ planeId = p.loadURDF('plane.urdf')
 p.setTimeStep(1./500.)  # Use 1/500 for a faster simulation speed
 
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.3]
+cubeStartPos = [0, 0, 0.9]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
@@ -74,14 +74,15 @@ for i in range(num_joints):
     print(f"Joint {i}: Name={joint_info[1].decode('utf-8')} Type={joint_info[2]}")
 
 # Function to move joints with velocity control for smoother motion
-def move_joints_to_velocity(robot_id, joint_velocities, force=200):
-    for joint_index, velocity in enumerate(joint_velocities):
+def move_joints_to_target_position(robot_id, target_positions, force=200):
+    for joint_index, position in enumerate(target_positions):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
-            jointIndex=rotational_joints[joint_index],  # Only controlling the rotational joints
-            controlMode=p.VELOCITY_CONTROL,
-            targetVelocity=velocity,
-            force=force
+            jointIndex=rotational_joints[joint_index],  # Only controlling rotational joints
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=position,  # Target position in radians
+            force=force,
+            positionGain=0.1  # Optional: Adjust gain for smoother control
         )
 
 # Function to move prismatic joints to lift or lower legs
@@ -96,54 +97,45 @@ def move_prismatic_joints(robot_id, target_positions, force=200):
         )
 
 # Function to create a consistent walking motion between -45 degrees and +45 degrees
-def perform_fast_walking_motion(robot_id, num_joints, step_velocity=10.0, reset_velocity=0.0, force=100):
-
+def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=30):
     # Split the legs into two groups for alternating movements
-    left_legs = [0, 2]  # Assuming joints 1 and 5 are left legs
-    right_legs = [1, 3]  # Assuming joints 3 and 7 are right legs
+    left_legs = [0, 2]  # Left legs (rotational joints 0 and 2)
+    right_legs = [1, 3]  # Right legs (rotational joints 1 and 3)
 
-    prismatic_positions = [-0.7, -1, -0.7, -1]  # Lift right legs, lower left legs
-    #move_prismatic_joints(robot_id, prismatic_positions, force)
+    # Step 1: Move left legs to +45 degrees (forward), right legs to -45 degrees (backward)
+    while True:
+        # Step 1: Move left legs to +45 degrees (forward), right legs to -45 degrees (backward)
+        joint_positions = [0] * len(rotational_joints)
+        for leg in left_legs:
+            joint_positions[leg] = step_angle  # Left legs forward to +45 degrees
+        for leg in right_legs:
+            joint_positions[leg] = -step_angle  # Right legs backward to -45 degrees
+        
+        move_joints_to_target_position(robot_id, joint_positions, force)
 
-    # Step 1: Move left legs forward (toward +45 degrees), right legs backward (toward -45 degrees)
-    joint_velocities = [reset_velocity] * len(rotational_joints)
-    for leg in left_legs:
-        joint_velocities[leg] = step_velocity  # Move left legs forward (to +45 degrees)
-    for leg in right_legs:
-        joint_velocities[leg] = -step_velocity  # Move right legs backward (to -45 degrees)
+        # Simulate for a portion of the cycle to observe movement
+        for _ in range(steps_per_cycle):  # Adjust number of steps per cycle
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./500.)
 
-    move_joints_to_velocity(robot_id, joint_velocities, force)
+        # Step 2: Move left legs to -45 degrees (backward), right legs to +45 degrees (forward)
+        for leg in left_legs:
+            joint_positions[leg] = -step_angle  # Left legs backward to -45 degrees
+        for leg in right_legs:
+            joint_positions[leg] = step_angle  # Right legs forward to +45 degrees
+        
+        move_joints_to_target_position(robot_id, joint_positions, force)
 
-    # Simulate for a few steps to see the effect
-    for _ in range(100):  # Fewer simulation steps for faster movement
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./500.)
-    
-    prismatic_positions = [-1, -0.7, -1, -0.7]  # Lift left legs, lower right legs
-    #move_prismatic_joints(robot_id, prismatic_positions, force)
+        # Simulate for a portion of the cycle to observe movement
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./500.)
 
-    # Step 2: Move left legs backward (toward -45 degrees), right legs forward (toward +45 degrees)
-    for leg in left_legs:
-        joint_velocities[leg] = -step_velocity  # Move left legs backward (to -45 degrees)
-    for leg in right_legs:
-        joint_velocities[leg] = step_velocity  # Move right legs forward (to +45 degrees)
-
-    move_joints_to_velocity(robot_id, joint_velocities, force)
-
-    # Simulate for a few steps to see the effect
-    for _ in range(100):
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./500.)
-
-    # Step 3: Reset all legs to the initial position using zero velocity (to maintain consistency)
-    joint_velocities = [reset_velocity] * len(rotational_joints)
-    move_joints_to_velocity(robot_id, joint_velocities, force)
-
-# Run the simulation for a specified number of steps to move forward with smoother motion
+# Run the simulation for a specified number of steps to m-ove forward with smoother motion
 for _ in range(500):  # Main loop with adjusted motion
-    perform_fast_walking_motion(boxId, num_joints, step_velocity=9.0, force=16)
+    perform_fast_walking_motion(boxId, num_joints, step_angle=math.pi/4, force=16)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
