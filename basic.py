@@ -89,7 +89,7 @@ def move_joints_to_target_position(robot_id, target_positions, force=200):
             positionGain=0.1  # Optional: Adjust gain for smoother control
         )
 
-# Function to move prismatic joints to lift or lower legs
+# NOT BEING USED FOR NOW
 def move_prismatic_joints(robot_id, target_positions, force=200):
     for joint_index, position in enumerate(target_positions):
         p.setJointMotorControl2(
