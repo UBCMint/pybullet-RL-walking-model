@@ -20,7 +20,7 @@ p.setGravity(0, 0, -10)
 planeId = p.loadURDF('plane.urdf')
 
 # Set a larger time step to increase the speed of joint movements
-p.setTimeStep(1./500.)  # Use 1/500 for a faster simulation speed
+p.setTimeStep(1. / 240.)
 
 # Define initial position and orientation of the robot
 cubeStartPos = [0, 0, 0.3]
@@ -176,10 +176,74 @@ def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, forc
             update_camera(robot_id)
             time.sleep(1./500.)
 
+# Function to move joints using position control for smoother motion (FROM NIMA'S IMPLEMENTATION)
+def move_joints_to_position(robot_id, joint_positions, max_force=50):
+    """
+    Move the robot's joints using position control.
+    :param robot_id: ID of the robot in the simulation.
+    :param joint_positions: List of target positions for each joint.
+    :param max_force: Maximum force applied to each joint motor.
+    """
+    for joint_index, position in enumerate(joint_positions):
+        p.setJointMotorControl2(
+            bodyUniqueId=robot_id,
+            jointIndex=joint_index,
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=position,
+            force=max_force
+        )
 
-# Run the simulation for a specified number of steps to m-ove forward with smoother motion
+# Function to create a consistent walking motion with sinusoidal patterns
+def perform_gait_motion(robot_id, num_joints, step_length=0.3, step_height=0.2, speed=0.1):
+    """
+    Perform a simple alternating gait motion using sinusoidal control for coordinated leg movements.
+    :param robot_id: ID of the robot in the simulation.
+    :param num_joints: Number of joints to control.
+    :param step_length: Amplitude of the movement forward and backward.
+    :param step_height: Amplitude of the upward and downward movement.
+    :param speed: Speed of the leg movements.
+    """
+    phase_offset = math.pi  # Offset for alternating legs (180 degrees)
 
+    # Assign indices of the legs to create a trot gait pattern
+    left_legs = [0, 2]  # Left legs joint indices
+    right_legs = [1, 3]  # Right legs joint indices
+
+    time_step = 0
+
+    # Run the gait for a specified number of steps
+    for _ in range(1000):
+        time_step += speed
+
+        # Calculate joint positions based on a simple sinusoidal function for each leg
+        joint_positions = [0] * num_joints
+        for joint in left_legs:
+            # Moving left legs in a sinusoidal pattern
+            joint_positions[joint] = step_length * math.sin(time_step)  # Move forward/backward
+            joint_positions[joint] += step_height * math.cos(time_step)  # Move up/down
+
+        for joint in right_legs:
+            # Moving right legs in the opposite phase of left legs
+            joint_positions[joint] = step_length * math.sin(time_step + phase_offset)
+            joint_positions[joint] += step_height * math.cos(time_step + phase_offset)
+
+        # Apply the positions to the joints using position control
+        move_joints_to_position(robot_id, joint_positions)
+
+        # Apply a small forward force to the robot's base link to encourage movement
+        p.applyExternalForce(robot_id, -1, [50, 0, 0], [0, 0, 0], p.WORLD_FRAME)  # Adjust force as needed
+
+        # Step the simulation forward to see the effect
+        p.stepSimulation()
+        time.sleep(1. / 240.)
+
+
+
+# UNCOMMENT THE ONE YOU WANT TO RUN (AND COMMENT THE OTHER ONE):
+
+#perform_gait_motion(boxId, num_joints, step_length=0.3, step_height=0.1, speed=0.2)
 perform_fast_walking_motion(boxId, num_joints, step_angle=math.pi/4, force=16)
+
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
