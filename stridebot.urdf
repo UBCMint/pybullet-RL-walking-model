@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <robot name="quadruped_robot">
-  <!-- Define the main body (still a square) -->
+  <!-- Define the main body -->
   <link name="base_link">
     <visual>
       <geometry>
-        <box size="0.6 0.6 0.1"/> <!-- Square body: length and width both 0.6, height remains 0.1 -->
+        <box size="0.6 0.6 0.1"/> <!-- Square body: length and width 0.6, height remains 0.1 -->
       </geometry>
       <material name="blue">
         <color rgba="0 0 1 1"/>
@@ -12,7 +12,7 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.6 0.6 0.1"/> <!-- Adjusted collision size to match visual size -->
+        <box size="0.6 0.6 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -23,37 +23,16 @@
   </link>
 
   <!-- Front Left Leg -->
-  <!-- Prismatic Joint for vertical movement -->
-  <joint name="front_left_prismatic" type="prismatic">
-    <parent link="base_link"/>
-    <child link="front_left_attachment_point"/>
-    <origin xyz="0.3 0.3 0" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 0 1"/> <!-- Vertical movement along z-axis -->
-    <limit lower="-0.2" upper="0.2" effort="100.0" velocity="1.0"/> <!-- Limits for the prismatic joint -->
-  </joint>
-
-  <!-- Intermediate link for front left leg attachment -->
-  <link name="front_left_attachment_point">
-    <visual>
-      <geometry>
-        <box size="0.05 0.05 0.05"/> <!-- Link between prismatic and rotational joints -->
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
   <!-- Continuous Joint for rotational movement -->
   <joint name="front_left_rotational" type="continuous">
-    <parent link="front_left_attachment_point"/>
+    <parent link="base_link"/>
     <child link="front_left_leg"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0.3 0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
     <axis xyz="0 1 0"/> <!-- Rotational movement along y-axis -->
     <limit effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Front Left Leg Link (changed to cylinder) -->
+  <!-- Front Left Leg Link (cylinder) -->
   <link name="front_left_leg">
     <visual>
       <geometry>
@@ -65,7 +44,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.05" length="0.3"/> <!-- Adjusted leg dimensions to a cylinder -->
+        <cylinder radius="0.05" length="0.3"/>
       </geometry>
     </collision>
     <inertial>
@@ -76,41 +55,20 @@
   </link>
 
   <!-- Front Right Leg -->
-  <!-- Prismatic Joint for vertical movement -->
-  <joint name="front_right_prismatic" type="prismatic">
-    <parent link="base_link"/>
-    <child link="front_right_attachment_point"/>
-    <origin xyz="0.3 -0.3 0" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 0 1"/>
-    <limit lower="-0.2" upper="0.2" effort="100.0" velocity="1.0"/>
-  </joint>
-
-  <!-- Intermediate link for front right leg attachment -->
-  <link name="front_right_attachment_point">
-    <visual>
-      <geometry>
-        <box size="0.05 0.05 0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
   <!-- Continuous Joint for rotational movement -->
   <joint name="front_right_rotational" type="continuous">
-    <parent link="front_right_attachment_point"/>
+    <parent link="base_link"/>
     <child link="front_right_leg"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0.3 -0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
     <axis xyz="0 1 0"/>
     <limit effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Front Right Leg Link (changed to cylinder) -->
+  <!-- Front Right Leg Link (cylinder) -->
   <link name="front_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="0.3"/> <!-- Cylinder leg dimensions: radius 0.05, length 0.3 -->
+        <cylinder radius="0.05" length="0.3"/>
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -129,41 +87,20 @@
   </link>
 
   <!-- Back Left Leg -->
-  <!-- Prismatic Joint for vertical movement -->
-  <joint name="back_left_prismatic" type="prismatic">
-    <parent link="base_link"/>
-    <child link="back_left_attachment_point"/>
-    <origin xyz="-0.3 0.3 0" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 0 1"/>
-    <limit lower="-0.2" upper="0.2" effort="100.0" velocity="1.0"/>
-  </joint>
-
-  <!-- Intermediate link for back left leg attachment -->
-  <link name="back_left_attachment_point">
-    <visual>
-      <geometry>
-        <box size="0.05 0.05 0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
   <!-- Continuous Joint for rotational movement -->
   <joint name="back_left_rotational" type="continuous">
-    <parent link="back_left_attachment_point"/>
+    <parent link="base_link"/>
     <child link="back_left_leg"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="-0.3 0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
     <axis xyz="0 1 0"/>
     <limit effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Back Left Leg Link (changed to cylinder) -->
+  <!-- Back Left Leg Link (cylinder) -->
   <link name="back_left_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="0.3"/> <!-- Cylinder leg dimensions: radius 0.05, length 0.3 -->
+        <cylinder radius="0.05" length="0.3"/>
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -182,41 +119,20 @@
   </link>
 
   <!-- Back Right Leg -->
-  <!-- Prismatic Joint for vertical movement -->
-  <joint name="back_right_prismatic" type="prismatic">
-    <parent link="base_link"/>
-    <child link="back_right_attachment_point"/>
-    <origin xyz="-0.3 -0.3 0" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 0 1"/>
-    <limit lower="-0.2" upper="0.2" effort="100.0" velocity="1.0"/>
-  </joint>
-
-  <!-- Intermediate link for back right leg attachment -->
-  <link name="back_right_attachment_point">
-    <visual>
-      <geometry>
-        <box size="0.05 0.05 0.05"/>
-      </geometry>
-      <material name="gray">
-        <color rgba="0.5 0.5 0.5 1"/>
-      </material>
-    </visual>
-  </link>
-
   <!-- Continuous Joint for rotational movement -->
   <joint name="back_right_rotational" type="continuous">
-    <parent link="back_right_attachment_point"/>
+    <parent link="base_link"/>
     <child link="back_right_leg"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="-0.3 -0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
     <axis xyz="0 1 0"/>
     <limit effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Back Right Leg Link (changed to cylinder) -->
+  <!-- Back Right Leg Link (cylinder) -->
   <link name="back_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="0.3"/> <!-- Cylinder leg dimensions: radius 0.05, length 0.3 -->
+        <cylinder radius="0.05" length="0.3"/>
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -233,5 +149,4 @@
       <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
-
 </robot>

@@ -43,15 +43,9 @@ for joint in range(num_joints):
 # Set initial angle for legs to start at 45 degrees
 initial_angle = math.pi / 4  # 45 degrees in radians
 
-prismatic_joints = [0, 2, 4, 6]  # Prismatic joints for front_left, front_right, back_left, back_right
-prismatic_initial_height = -0.1  # Initial height for the prismatic joints (lowered by 0.2 meters)
+rotational_initial_height = -0.1  # Initial height for the rotational joints (lowered by 0.2 meters)
 
-# Adjust the prismatic joints to lower the legs
-for joint in prismatic_joints:
-    p.resetJointState(boxId, joint, prismatic_initial_height)
-    
-# Joint indexes for rotational joints only (ignoring prismatic joints)
-rotational_joints = [1, 3, 5, 7]  # Continuous joints for front_left, front_right, back_left, back_right
+rotational_joints = [0, 1, 2, 3]  # Continuous joints for front_left, front_right, back_left, back_right
 
 # Set the initial angle for all the rotational joints
 p.resetJointState(boxId, rotational_joints[0], -initial_angle)  # front_left_leg
@@ -89,16 +83,6 @@ def move_joints_to_target_position(robot_id, target_positions, force=200):
             positionGain=0.1  # Optional: Adjust gain for smoother control
         )
 
-# NOT BEING USED FOR NOW
-def move_prismatic_joints(robot_id, target_positions, force=200):
-    for joint_index, position in enumerate(target_positions):
-        p.setJointMotorControl2(
-            bodyUniqueId=robot_id,
-            jointIndex=prismatic_joints[joint_index],  # Only controlling prismatic joints
-            controlMode=p.POSITION_CONTROL,
-            targetPosition=position,  # Set target height for the legs
-            force=force
-        )
 
 def get_link_index_by_name(robot_id, link_name):
     num_joints = p.getNumJoints(robot_id)
