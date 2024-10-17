@@ -23,16 +23,15 @@
   </link>
 
   <!-- Front Left Leg -->
-  <!-- Continuous Joint for rotational movement -->
-  <joint name="front_left_rotational" type="continuous">
+  <!-- Revolute Joint for controlled rotation along the y-axis -->
+  <joint name="front_left_rotational" type="revolute">
     <parent link="base_link"/>
     <child link="front_left_leg"/>
     <origin xyz="0.3 0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 1 0"/> <!-- Rotational movement along y-axis -->
-    <limit effort="100.0" velocity="1.0"/>
+    <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
+    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/> <!-- ±45 degrees limit -->
   </joint>
 
-  <!-- Front Left Leg Link (cylinder) -->
   <link name="front_left_leg">
     <visual>
       <geometry>
@@ -55,16 +54,14 @@
   </link>
 
   <!-- Front Right Leg -->
-  <!-- Continuous Joint for rotational movement -->
-  <joint name="front_right_rotational" type="continuous">
+  <joint name="front_right_rotational" type="revolute">
     <parent link="base_link"/>
     <child link="front_right_leg"/>
-    <origin xyz="0.3 -0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 1 0"/>
-    <limit effort="100.0" velocity="1.0"/>
+    <origin xyz="0.3 -0.3 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
+    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Front Right Leg Link (cylinder) -->
   <link name="front_right_leg">
     <visual>
       <geometry>
@@ -87,16 +84,14 @@
   </link>
 
   <!-- Back Left Leg -->
-  <!-- Continuous Joint for rotational movement -->
-  <joint name="back_left_rotational" type="continuous">
+  <joint name="back_left_rotational" type="revolute">
     <parent link="base_link"/>
     <child link="back_left_leg"/>
-    <origin xyz="-0.3 0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 1 0"/>
-    <limit effort="100.0" velocity="1.0"/>
+    <origin xyz="-0.3 0.3 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
+    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Back Left Leg Link (cylinder) -->
   <link name="back_left_leg">
     <visual>
       <geometry>
@@ -119,16 +114,14 @@
   </link>
 
   <!-- Back Right Leg -->
-  <!-- Continuous Joint for rotational movement -->
-  <joint name="back_right_rotational" type="continuous">
+  <joint name="back_right_rotational" type="revolute">
     <parent link="base_link"/>
     <child link="back_right_leg"/>
-    <origin xyz="-0.3 -0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
-    <axis xyz="0 1 0"/>
-    <limit effort="100.0" velocity="1.0"/>
+    <origin xyz="-0.3 -0.3 -0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
+    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
 
-  <!-- Back Right Leg Link (cylinder) -->
   <link name="back_right_leg">
     <visual>
       <geometry>
@@ -149,4 +142,5 @@
       <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
     </inertial>
   </link>
+
 </robot>
