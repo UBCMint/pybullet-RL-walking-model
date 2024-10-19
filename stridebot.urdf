@@ -16,7 +16,7 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="50.0"/>
+      <mass value="5.0"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
     </inertial>
@@ -52,8 +52,8 @@
       <geometry>
         <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
       </geometry>
-      <material name="red">
-        <color rgba="1 0 0 1"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
       </material>
     </visual>
     <collision>

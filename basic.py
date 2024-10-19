@@ -34,7 +34,7 @@ for joint in range(num_joints):
 
 
 # Function to update the camera to follow the robot
-def update_camera(robot_id, camera_distance=4):
+def update_camera(robot_id, camera_distance=2):
     robot_pos, _ = p.getBasePositionAndOrientation(robot_id)
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
@@ -106,7 +106,7 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
                 prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Apply prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, 1000)
+        move_joints(robot_id, prismatic_positions, rotational_positions, 400)
 
         # Step the simulation and update the camera
         p.stepSimulation()
