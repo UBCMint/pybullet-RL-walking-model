@@ -73,7 +73,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
         )
 
 # Modify perform_trot_gait to control both prismatic and rotational joints
-def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
+def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_height=0.1, speed=0.1):
     phase_offset = math.pi  # Offset for alternating legs
     prismatic_offset = math.pi / 2
     # Indices for diagonal pairs of legs
@@ -81,7 +81,9 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
     diagonal_2 = [1, 2]  # Front right and back left
 
     time_step = 0
-    while True:
+    
+    start_time = time.time()  # Record the start time
+    while time.time() - start_time < duration:
         time_step += speed
         prismatic_positions = [0] * len(prismatic_joints)
         rotational_positions = [0] * len(rotational_joints)
@@ -110,8 +112,16 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         update_camera(robot_id)
         time.sleep(1./240.)
 
+def do_nothing(robot_id, duration):
+    start_time = time.time()  # Record the start time
+    while time.time() - start_time < duration:
+        p.stepSimulation()
+        update_camera(robot_id)
+        time.sleep(1./240.)
+
 # Perform the trot gait motion with proper leg lifting
-perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.2)
+perform_trot_gait(boxId, num_joints, duration=10, step_length=0.3, step_height=0.2, speed=0.2)
+do_nothing(boxId, duration = 10)
 
 
 # Get and print the final position and orientation of the robot
