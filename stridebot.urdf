@@ -26,7 +26,7 @@
   <joint name="front_left_prismatic" type="prismatic">
     <parent link="base_link"/>
     <child link="front_left_rotational_link"/>
-    <origin xyz="0.3 0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint, vertical motion -->
+    <origin xyz="0.3 0.3 -0.2" rpy="0 0 0"/> <!-- Prismatic joint starts 0.2 units below to attach closer to the top of the leg -->
     <axis xyz="0 0 1"/> <!-- Vertical movement -->
     <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
   </joint>
@@ -50,7 +50,7 @@
   <link name="front_left_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
+        <cylinder radius="0.05" length="0.6"/> <!-- Cylinder leg: shortened length from 1 to 0.6 -->
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
@@ -58,7 +58,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="0.6"/>
       </geometry>
     </collision>
     <inertial>
@@ -67,13 +67,11 @@
     </inertial>
   </link>
 
-  <!-- Repeat similar prismatic and rotational joints for the other legs -->
-
   <!-- Front Right Leg (with prismatic and rotational joints) -->
   <joint name="front_right_prismatic" type="prismatic">
     <parent link="base_link"/>
     <child link="front_right_rotational_link"/>
-    <origin xyz="0.3 -0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <origin xyz="0.3 -0.3 -0.2" rpy="0 0 0"/> <!-- Prismatic joint starts 0.2 units below to attach closer to the top of the leg -->
     <axis xyz="0 0 1"/> <!-- Vertical movement -->
     <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
   </joint>
@@ -97,7 +95,7 @@
   <link name="front_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
+        <cylinder radius="0.05" length="0.6"/> <!-- Cylinder leg: shortened length from 1 to 0.6 -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -105,7 +103,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="0.6"/>
       </geometry>
     </collision>
     <inertial>
@@ -118,7 +116,7 @@
   <joint name="back_left_prismatic" type="prismatic">
     <parent link="base_link"/>
     <child link="back_left_rotational_link"/>
-    <origin xyz="-0.3 0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <origin xyz="-0.3 0.3 -0.2" rpy="0 0 0"/> <!-- Prismatic joint starts 0.2 units below to attach closer to the top of the leg -->
     <axis xyz="0 0 1"/> <!-- Vertical movement -->
     <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
   </joint>
@@ -142,7 +140,7 @@
   <link name="back_left_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
+        <cylinder radius="0.05" length="0.6"/> <!-- Cylinder leg: shortened length from 1 to 0.6 -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -150,7 +148,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="0.6"/>
       </geometry>
     </collision>
     <inertial>
@@ -163,7 +161,7 @@
   <joint name="back_right_prismatic" type="prismatic">
     <parent link="base_link"/>
     <child link="back_right_rotational_link"/>
-    <origin xyz="-0.3 -0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <origin xyz="-0.3 -0.3 -0.2" rpy="0 0 0"/> <!-- Prismatic joint starts 0.2 units below to attach closer to the top of the leg -->
     <axis xyz="0 0 1"/> <!-- Vertical movement -->
     <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
   </joint>
@@ -187,7 +185,7 @@
   <link name="back_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
+        <cylinder radius="0.05" length="0.6"/> <!-- Cylinder leg: shortened length from 1 to 0.6 -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -195,7 +193,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="0.6"/>
       </geometry>
     </collision>
     <inertial>

@@ -12,13 +12,13 @@ urdf_path = os.path.join(current_dir, 'stridebot.urdf')
 physicsClient = p.connect(p.GUI)  
 p.setRealTimeSimulation(1)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setGravity(0, 0, -70)
+p.setGravity(0, 0, -9.8)
 
 # Load a plane for the robot to walk on
 planeId = p.loadURDF('plane.urdf')
 
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.3]
+cubeStartPos = [0, 0, 0.4]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
@@ -44,9 +44,6 @@ def update_camera(robot_id, camera_distance=2):
     )
 
 
-# Joint indices for each leg
-rotational_joints = [0, 1, 2, 3]  # Indices of the four legs
-
 # Function to move joints with velocity control for smoother motion
 # Joint indices for rotational and prismatic joints
 rotational_joints = [1, 3, 5, 7]  # Indices of the rotational joints for each leg
@@ -61,7 +58,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
             jointIndex=prismatic_joints[joint_index],  # Prismatic joints
             controlMode=p.POSITION_CONTROL,
             targetPosition=position,  # Target vertical position
-            force=force
+            force=50,
         )
     
     # Move rotational joints (leg movement)
@@ -78,7 +75,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
 # Modify perform_trot_gait to control both prismatic and rotational joints
 def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
     phase_offset = math.pi  # Offset for alternating legs
-
+    prismatic_offset = math.pi / 2
     # Indices for diagonal pairs of legs
     diagonal_1 = [0, 3]  # Front left and back right
     diagonal_2 = [1, 2]  # Front right and back left
@@ -92,7 +89,7 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         # Move diagonal_1 (front left and back right) first
         for joint in diagonal_1:
             rotational_positions[joint] = step_length * math.sin(time_step)  # Forward/backward motion
-            if math.sin(time_step) > 0:
+            if math.sin(time_step + prismatic_offset) > 0:
                 prismatic_positions[joint] = step_height  # Lift the leg
             else:
                 prismatic_positions[joint] = 0  # Push the leg down during stance
@@ -100,13 +97,13 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         # Move diagonal_2 (front right and back left) with a phase offset
         for joint in diagonal_2:
             rotational_positions[joint] = step_length * math.sin(time_step + phase_offset)
-            if math.sin(time_step + phase_offset) > 0:
+            if math.sin(time_step + phase_offset + prismatic_offset) > 0:
                 prismatic_positions[joint] = step_height  # Lift the leg
             else:
                 prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Apply prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, 400)
+        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
 
         # Step the simulation and update the camera
         p.stepSimulation()
@@ -114,7 +111,7 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         time.sleep(1./240.)
 
 # Perform the trot gait motion with proper leg lifting
-perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.1, speed=0.2)
+perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.2)
 
 
 # Get and print the final position and orientation of the robot
