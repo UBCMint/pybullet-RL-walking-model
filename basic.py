@@ -12,7 +12,7 @@ urdf_path = os.path.join(current_dir, 'stridebot.urdf')
 physicsClient = p.connect(p.GUI)  
 p.setRealTimeSimulation(1)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setGravity(0, 0, -10)
+p.setGravity(0, 0, -70)
 
 # Load a plane for the robot to walk on
 planeId = p.loadURDF('plane.urdf')
@@ -35,12 +35,12 @@ for joint in range(num_joints):
 rotational_joints = [0, 1, 2, 3]  # Indices of the four legs
 
 # Function to update the camera to follow the robot
-def update_camera(robot_id, camera_distance=2):
+def update_camera(robot_id, camera_distance=4):
     robot_pos, _ = p.getBasePositionAndOrientation(robot_id)
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
         cameraYaw=p.getDebugVisualizerCamera()[8],
-        cameraPitch=0,
+        cameraPitch= -30,
         cameraTargetPosition=robot_pos
     )
 
@@ -90,7 +90,7 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.2, sp
         time.sleep(1./240.)
 
 # Perform the trot gait motion with proper leg lifting
-perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.3, speed=0.2)
+perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.9, speed=0.2)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
