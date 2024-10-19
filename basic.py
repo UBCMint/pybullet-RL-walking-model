@@ -31,8 +31,7 @@ print(f"Number of joints: {num_joints}")
 for joint in range(num_joints):
     p.changeDynamics(boxId, joint, lateralFriction=5.0)
 
-# Joint indices for each leg
-rotational_joints = [0, 1, 2, 3]  # Indices of the four legs
+
 
 # Function to update the camera to follow the robot
 def update_camera(robot_id, camera_distance=4):
@@ -44,20 +43,40 @@ def update_camera(robot_id, camera_distance=4):
         cameraTargetPosition=robot_pos
     )
 
+
+# Joint indices for each leg
+rotational_joints = [0, 1, 2, 3]  # Indices of the four legs
+
 # Function to move joints with velocity control for smoother motion
-def move_joints_to_target_position(robot_id, target_positions, force=200):
-    for joint_index, position in enumerate(target_positions):
+# Joint indices for rotational and prismatic joints
+rotational_joints = [1, 3, 5, 7]  # Indices of the rotational joints for each leg
+prismatic_joints = [0, 2, 4, 6]  # Indices of the prismatic joints for each leg
+
+# Function to move both prismatic and rotational joints
+def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
+    # Move prismatic joints (vertical movement)
+    for joint_index, position in enumerate(prismatic_positions):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
-            jointIndex=rotational_joints[joint_index],  # Only controlling rotational joints
+            jointIndex=prismatic_joints[joint_index],  # Prismatic joints
             controlMode=p.POSITION_CONTROL,
-            targetPosition=position,  # Target position in radians
+            targetPosition=position,  # Target vertical position
+            force=force
+        )
+    
+    # Move rotational joints (leg movement)
+    for joint_index, position in enumerate(rotational_positions):
+        p.setJointMotorControl2(
+            bodyUniqueId=robot_id,
+            jointIndex=rotational_joints[joint_index],  # Rotational joints
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=position,  # Target angular position
             force=force,
             maxVelocity=4
         )
 
-# Perform a diagonal (trot) gait to maintain balance
-def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.2, speed=0.1):
+# Modify perform_trot_gait to control both prismatic and rotational joints
+def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
     phase_offset = math.pi  # Offset for alternating legs
 
     # Indices for diagonal pairs of legs
@@ -67,22 +86,27 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.2, sp
     time_step = 0
     while True:
         time_step += speed
-        joint_positions = [0] * num_joints
+        prismatic_positions = [0] * len(prismatic_joints)
+        rotational_positions = [0] * len(rotational_joints)
 
         # Move diagonal_1 (front left and back right) first
         for joint in diagonal_1:
-            joint_positions[joint] = step_length * math.sin(time_step)  # Forward/backward motion
+            rotational_positions[joint] = step_length * math.sin(time_step)  # Forward/backward motion
             if math.sin(time_step) > 0:
-                joint_positions[joint] += step_height * math.sin(time_step)  # Lift legs when moving forward
+                prismatic_positions[joint] = step_height  # Lift the leg
+            else:
+                prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Move diagonal_2 (front right and back left) with a phase offset
         for joint in diagonal_2:
-            joint_positions[joint] = step_length * math.sin(time_step + phase_offset)
+            rotational_positions[joint] = step_length * math.sin(time_step + phase_offset)
             if math.sin(time_step + phase_offset) > 0:
-                joint_positions[joint] += step_height * math.sin(time_step + phase_offset)
+                prismatic_positions[joint] = step_height  # Lift the leg
+            else:
+                prismatic_positions[joint] = 0  # Push the leg down during stance
 
-        # Apply joint movements
-        move_joints_to_target_position(robot_id, joint_positions, 1000)
+        # Apply prismatic and rotational joint movements
+        move_joints(robot_id, prismatic_positions, rotational_positions, 1000)
 
         # Step the simulation and update the camera
         p.stepSimulation()
@@ -90,7 +114,8 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.2, sp
         time.sleep(1./240.)
 
 # Perform the trot gait motion with proper leg lifting
-perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.9, speed=0.2)
+perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.1, speed=0.2)
+
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)

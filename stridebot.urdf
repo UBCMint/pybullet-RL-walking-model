@@ -17,25 +17,40 @@
     </collision>
     <inertial>
       <mass value="50.0"/>
-      <origin rpy="0 0 0" xyz="0 0 1.5"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
     </inertial>
   </link>
 
-  <!-- Front Left Leg -->
-  <!-- Revolute Joint for controlled rotation along the y-axis -->
-  <joint name="front_left_rotational" type="revolute">
+  <!-- Front Left Leg (with prismatic and rotational joints) -->
+  <joint name="front_left_prismatic" type="prismatic">
     <parent link="base_link"/>
+    <child link="front_left_rotational_link"/>
+    <origin xyz="0.3 0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint, vertical motion -->
+    <axis xyz="0 0 1"/> <!-- Vertical movement -->
+    <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
+  </joint>
+
+  <!-- No visual geometry for the rotational link -->
+  <link name="front_left_rotational_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <joint name="front_left_rotational" type="revolute">
+    <parent link="front_left_rotational_link"/>
     <child link="front_left_leg"/>
-    <origin xyz="0.3 0.3 -0.05" rpy="0 0 0"/> <!-- Move leg to corner of square base -->
+    <origin xyz="0 0 -0.05" rpy="0 0 0"/> <!-- Offset for the rotational joint -->
     <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
-    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/> <!-- ±45 degrees limit -->
+    <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
 
   <link name="front_left_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg dimensions: radius 0.05, length 0.3 -->
+        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -48,16 +63,33 @@
     </collision>
     <inertial>
       <mass value="5"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
     </inertial>
   </link>
 
-  <!-- Front Right Leg -->
-  <joint name="front_right_rotational" type="revolute">
+  <!-- Repeat similar prismatic and rotational joints for the other legs -->
+
+  <!-- Front Right Leg (with prismatic and rotational joints) -->
+  <joint name="front_right_prismatic" type="prismatic">
     <parent link="base_link"/>
+    <child link="front_right_rotational_link"/>
+    <origin xyz="0.3 -0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <axis xyz="0 0 1"/> <!-- Vertical movement -->
+    <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
+  </joint>
+
+  <!-- No visual geometry for the rotational link -->
+  <link name="front_right_rotational_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <joint name="front_right_rotational" type="revolute">
+    <parent link="front_right_rotational_link"/>
     <child link="front_right_leg"/>
-    <origin xyz="0.3 -0.3 -0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.05" rpy="0 0 0"/> <!-- Offset for the rotational joint -->
     <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
     <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
@@ -65,7 +97,7 @@
   <link name="front_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -78,16 +110,31 @@
     </collision>
     <inertial>
       <mass value="5"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
     </inertial>
   </link>
 
-  <!-- Back Left Leg -->
-  <joint name="back_left_rotational" type="revolute">
+  <!-- Back Left Leg (with prismatic and rotational joints) -->
+  <joint name="back_left_prismatic" type="prismatic">
     <parent link="base_link"/>
+    <child link="back_left_rotational_link"/>
+    <origin xyz="-0.3 0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <axis xyz="0 0 1"/> <!-- Vertical movement -->
+    <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
+  </joint>
+
+  <!-- No visual geometry for the rotational link -->
+  <link name="back_left_rotational_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <joint name="back_left_rotational" type="revolute">
+    <parent link="back_left_rotational_link"/>
     <child link="back_left_leg"/>
-    <origin xyz="-0.3 0.3 -0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.05" rpy="0 0 0"/> <!-- Offset for the rotational joint -->
     <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
     <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
@@ -95,7 +142,7 @@
   <link name="back_left_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -108,16 +155,31 @@
     </collision>
     <inertial>
       <mass value="5"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
     </inertial>
   </link>
 
-  <!-- Back Right Leg -->
-  <joint name="back_right_rotational" type="revolute">
+  <!-- Back Right Leg (with prismatic and rotational joints) -->
+  <joint name="back_right_prismatic" type="prismatic">
     <parent link="base_link"/>
+    <child link="back_right_rotational_link"/>
+    <origin xyz="-0.3 -0.3 0.0" rpy="0 0 0"/> <!-- Prismatic joint -->
+    <axis xyz="0 0 1"/> <!-- Vertical movement -->
+    <limit lower="0" upper="0.1" effort="100.0" velocity="1.0"/>
+  </joint>
+
+  <!-- No visual geometry for the rotational link -->
+  <link name="back_right_rotational_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+  <joint name="back_right_rotational" type="revolute">
+    <parent link="back_right_rotational_link"/>
     <child link="back_right_leg"/>
-    <origin xyz="-0.3 -0.3 -0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.05" rpy="0 0 0"/> <!-- Offset for the rotational joint -->
     <axis xyz="0 1 0"/> <!-- Rotates around the y-axis -->
     <limit lower="-0.785" upper="0.785" effort="100.0" velocity="1.0"/>
   </joint>
@@ -125,7 +187,7 @@
   <link name="back_right_leg">
     <visual>
       <geometry>
-        <cylinder radius="0.05" length="1"/>
+        <cylinder radius="0.05" length="1"/> <!-- Cylinder leg -->
       </geometry>
       <material name="red">
         <color rgba="1 0 0 1"/>
@@ -138,8 +200,7 @@
     </collision>
     <inertial>
       <mass value="5"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
     </inertial>
   </link>
 
