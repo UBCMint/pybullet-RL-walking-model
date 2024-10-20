@@ -105,7 +105,7 @@ def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_heig
                 prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Apply prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
+        move_joints(robot_id, prismatic_positions, rotational_positions, 300)
 
         # Step the simulation and update the camera
         p.stepSimulation()
