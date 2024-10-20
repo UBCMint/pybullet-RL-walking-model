@@ -73,7 +73,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_
         )
 
 # Modify perform_trot_gait to control both prismatic and rotational joints
-def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_height=0.1, speed=0.1):
+def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
     phase_offset = math.pi  # Offset for alternating legs
     prismatic_offset = math.pi / 2
     # Indices for diagonal pairs of legs
@@ -83,7 +83,7 @@ def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_heig
     time_step = 0
     
     start_time = time.time()  # Record the start time
-    while time.time() - start_time < duration:
+    while True:
         time_step += speed
         prismatic_positions = [0] * len(prismatic_joints)
         rotational_positions = [0] * len(rotational_joints)
@@ -111,16 +111,21 @@ def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_heig
         p.stepSimulation()
         update_camera(robot_id)
         time.sleep(1./240.)
+        if (ord('e') not in p.getKeyboardEvents() and step_length == 0.3) or (ord('d') not in p.getKeyboardEvents() and step_length == -0.3):
+            break
 
-def do_nothing(robot_id, duration):
+def do_nothing(robot_id):
     start_time = time.time()  # Record the start time
-    while time.time() - start_time < duration:
+    while True:
         p.stepSimulation()
         update_camera(robot_id)
         time.sleep(1./240.)
+        keys = p.getKeyboardEvents()
+        if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys:
+            break
 
-def rotate(robot_id, num_joints, duration, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01, steps_per_cycle = 25):
-
+def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01, steps_per_cycle = 25):
+    # direction = True ---> Rotate right, direction = False ---> Rotate left
     if (direction):
         lift_joints = [1, 3]  # Front-left and back-left
         non_lift_joints = [0, 2]
@@ -133,7 +138,9 @@ def rotate(robot_id, num_joints, duration, direction, step_height=0.2, rotation_
     time_step = 0
     start_time = time.time()
 
-    while time.time() - start_time < duration:
+    while True:
+        if (ord('f') not in p.getKeyboardEvents() and direction) or (ord('s') not in p.getKeyboardEvents() and not direction):
+            break
         time_step += speed
         prismatic_positions = [0] * len(prismatic_joints)
         rotational_positions = [0] * len(rotational_joints)
@@ -144,7 +151,7 @@ def rotate(robot_id, num_joints, duration, direction, step_height=0.2, rotation_
         for joint in non_lift_joints:
             prismatic_positions[joint] = step_height  
         # Apply the prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 2000)
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 1000)
 
         # Step the simulation and update the camera
         for _ in range(5):
@@ -176,14 +183,33 @@ def rotate(robot_id, num_joints, duration, direction, step_height=0.2, rotation_
             p.stepSimulation()
             update_camera(robot_id)
             time.sleep(1./240.)
+    
+
+def control_robot_with_keys(robot_id, num_joints):
+    while True:
+        keys = p.getKeyboardEvents()
+
+        # F TO GO RIGHT
+        if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
+            rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
+        # S TO GO LEFT
+        elif ord('s') in keys and keys[ord('s')] & p.KEY_IS_DOWN:
+            rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
+        # E TO GO FORWARDS
+        elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
+            perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
+        # D TO GO BACKWARDS
+        elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
+            perform_trot_gait(boxId, num_joints, step_length= -0.3, step_height=0.2, speed=0.4)
+            
+        elif not (ord('w') in keys or ord('a') in keys or ord('s') in keys or ord('d') in keys):  # If no keys are pressed at all
+            do_nothing(robot_id)
+
+        p.stepSimulation()
+        time.sleep(1./240.)
 
 
-# Example usage of the rotate function
-rotate(boxId, num_joints, duration=70, direction = True, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
-
-perform_trot_gait(boxId, num_joints, duration=20, step_length=0.3, step_height=0.2, speed=0.4)
-do_nothing(boxId, duration = 10)
-
+control_robot_with_keys(boxId, num_joints)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)

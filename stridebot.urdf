@@ -52,8 +52,8 @@
       <geometry>
         <cylinder radius="0.05" length="0.6"/> <!-- Cylinder leg: shortened length from 1 to 0.6 -->
       </geometry>
-      <material name="green">
-        <color rgba="0 1 0 1"/>
+      <material name="red">
+        <color rgba="1 0 0 1"/>
       </material>
     </visual>
     <collision>
