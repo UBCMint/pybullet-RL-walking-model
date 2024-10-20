@@ -119,8 +119,58 @@ def do_nothing(robot_id, duration):
         update_camera(robot_id)
         time.sleep(1./240.)
 
-# Perform the trot gait motion with proper leg lifting
-perform_trot_gait(boxId, num_joints, duration=10, step_length=0.3, step_height=0.2, speed=0.2)
+def rotate(robot_id, num_joints, duration, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01):
+
+    # Indices for front-left (prismatic: 0, rotational: 1) and back-left (prismatic: 2, rotational: 3) legs
+    prismatic_lift_joints = [0, 2]  # Front-left and back-left
+    rotational_lift_joints = [1, 3]  # Corresponding rotational joints for the lifted legs
+
+    # Initialize time tracking
+    time_step = 0
+    start_time = time.time()
+
+    while time.time() - start_time < duration:
+        time_step += speed
+        prismatic_positions = [0] * len(prismatic_joints)
+        rotational_positions = [0] * len(rotational_joints)
+
+        # Step 1: Lift the left-side legs using prismatic joints (jump)
+        for joint in prismatic_lift_joints:
+            prismatic_positions[joint] = -step_height  # Lift the leg
+
+        # Step 2: Rotate the lifted legs forward while they are in the air
+        for joint in rotational_lift_joints:
+            rotational_positions[joint] = rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
+
+        # Apply the prismatic and rotational joint movements
+        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
+
+        # Step the simulation and update the camera
+        p.stepSimulation()
+        update_camera(robot_id)
+        time.sleep(1./240.)
+
+        # Step 3: Bring the lifted legs back to the ground (lower)
+        for joint in prismatic_lift_joints:
+            prismatic_positions[joint] = 0  # Lower the leg
+
+        # Step 4: Rotate the legs back to their starting positions
+        for joint in rotational_lift_joints:
+            rotational_positions[joint] = 0  # Reset the leg rotation
+
+        # Apply the prismatic and rotational joint movements to return to the start
+        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
+
+        # Step the simulation and update the camera
+        p.stepSimulation()
+        update_camera(robot_id)
+        time.sleep(1./240.)
+
+
+# Example usage of the rotate function
+rotate(boxId, num_joints, duration=7, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2)
+
+perform_trot_gait(boxId, num_joints, duration=20, step_length=0.3, step_height=0.2, speed=0.2)
 do_nothing(boxId, duration = 10)
 
 
