@@ -29,7 +29,7 @@ print(f"Number of joints: {num_joints}")
 
 # Set up initial dynamics for the robot's legs to ensure good ground contact
 for joint in range(num_joints):
-    p.changeDynamics(boxId, joint, lateralFriction=5.0)
+    p.changeDynamics(boxId, joint, lateralFriction=10.0)
 
 
 
@@ -50,7 +50,7 @@ rotational_joints = [1, 3, 5, 7]  # Indices of the rotational joints for each le
 prismatic_joints = [0, 2, 4, 6]  # Indices of the prismatic joints for each leg
 
 # Function to move both prismatic and rotational joints
-def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
+def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force, prismatic_force = 50):
     # Move prismatic joints (vertical movement)
     for joint_index, position in enumerate(prismatic_positions):
         p.setJointMotorControl2(
@@ -58,7 +58,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
             jointIndex=prismatic_joints[joint_index],  # Prismatic joints
             controlMode=p.POSITION_CONTROL,
             targetPosition=position,  # Target vertical position
-            force=50,
+            force=prismatic_force,
         )
     
     # Move rotational joints (leg movement)
@@ -68,7 +68,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, force=200):
             jointIndex=rotational_joints[joint_index],  # Rotational joints
             controlMode=p.POSITION_CONTROL,
             targetPosition=position,  # Target angular position
-            force=force,
+            force=rotational_force,
             maxVelocity=4
         )
 
@@ -105,7 +105,7 @@ def perform_trot_gait(robot_id, num_joints, duration, step_length=0.3, step_heig
                 prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Apply prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, 300)
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600)
 
         # Step the simulation and update the camera
         p.stepSimulation()
@@ -119,12 +119,16 @@ def do_nothing(robot_id, duration):
         update_camera(robot_id)
         time.sleep(1./240.)
 
-def rotate(robot_id, num_joints, duration, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01):
+def rotate(robot_id, num_joints, duration, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01, steps_per_cycle = 25):
 
-    # Indices for front-left (prismatic: 0, rotational: 1) and back-left (prismatic: 2, rotational: 3) legs
-    prismatic_lift_joints = [0, 2]  # Front-left and back-left
-    rotational_lift_joints = [1, 3]  # Corresponding rotational joints for the lifted legs
+    if (direction):
+        lift_joints = [1, 3]  # Front-left and back-left
+        non_lift_joints = [0, 2]
+    else:
+        lift_joints = [0, 2]  # Front-left and back-left
+        non_lift_joints = [1, 3]
 
+    
     # Initialize time tracking
     time_step = 0
     start_time = time.time()
@@ -135,42 +139,49 @@ def rotate(robot_id, num_joints, duration, step_height=0.2, rotation_angle=math.
         rotational_positions = [0] * len(rotational_joints)
 
         # Step 1: Lift the left-side legs using prismatic joints (jump)
-        for joint in prismatic_lift_joints:
-            prismatic_positions[joint] = -step_height  # Lift the leg
+        for joint in lift_joints:
+            prismatic_positions[joint] = 0  # Lift the leg
+        for joint in non_lift_joints:
+            prismatic_positions[joint] = step_height  
+        # Apply the prismatic and rotational joint movements
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 2000)
 
-        # Step 2: Rotate the lifted legs forward while they are in the air
-        for joint in rotational_lift_joints:
+        # Step the simulation and update the camera
+        for _ in range(5):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
+
+        for joint in lift_joints:
+            prismatic_positions[joint] = step_height  # Lift the leg
+        for joint in lift_joints:
             rotational_positions[joint] = rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
 
-        # Apply the prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
 
-        # Step the simulation and update the camera
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./240.)
-
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
         # Step 3: Bring the lifted legs back to the ground (lower)
-        for joint in prismatic_lift_joints:
-            prismatic_positions[joint] = 0  # Lower the leg
-
-        # Step 4: Rotate the legs back to their starting positions
-        for joint in rotational_lift_joints:
-            rotational_positions[joint] = 0  # Reset the leg rotation
+        for joint in lift_joints + non_lift_joints:
+            prismatic_positions[joint] = step_height  # Lower the leg
+            rotational_positions[joint] = 0
 
         # Apply the prismatic and rotational joint movements to return to the start
-        move_joints(robot_id, prismatic_positions, rotational_positions, 200)
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
 
         # Step the simulation and update the camera
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./240.)
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
 
 
 # Example usage of the rotate function
-rotate(boxId, num_joints, duration=7, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2)
+rotate(boxId, num_joints, duration=70, direction = True, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
 
-perform_trot_gait(boxId, num_joints, duration=20, step_length=0.3, step_height=0.2, speed=0.2)
+perform_trot_gait(boxId, num_joints, duration=20, step_length=0.3, step_height=0.2, speed=0.4)
 do_nothing(boxId, duration = 10)
 
 
