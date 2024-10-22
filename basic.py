@@ -43,7 +43,7 @@ def update_camera(robot_id, camera_distance=2):
     # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
-        cameraYaw=camera_yaw + 90,  # 180 degrees to point the camera behind the robot
+        cameraYaw=camera_yaw + 90,
         cameraPitch=-30,
         cameraTargetPosition=robot_pos
     )
@@ -129,7 +129,7 @@ def do_nothing(robot_id):
         if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys:
             break
 
-def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.01, steps_per_cycle = 25):
+def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
     # direction = True ---> Rotate right, direction = False ---> Rotate left
     if (direction):
         lift_joints = [1, 3]  # Front-left and back-left
@@ -154,20 +154,22 @@ def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math
         for joint in lift_joints:
             prismatic_positions[joint] = 0  # Lift the leg
         for joint in non_lift_joints:
-            prismatic_positions[joint] = step_height  
+            prismatic_positions[joint] = 0  
         # Apply the prismatic and rotational joint movements
         move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 1000)
 
         # Step the simulation and update the camera
-        for _ in range(5):
+        for _ in range(steps_per_cycle):
             p.stepSimulation()
             update_camera(robot_id)
             time.sleep(1./240.)
 
-        for joint in lift_joints:
-            prismatic_positions[joint] = step_height  # Lift the leg
+        for joint in (lift_joints + non_lift_joints):
+            prismatic_positions[joint] = step_height
         for joint in lift_joints:
             rotational_positions[joint] = rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
+        for joint in non_lift_joints:
+            rotational_positions[joint] = -rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
 
         move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
 
@@ -196,10 +198,10 @@ def control_robot_with_keys(robot_id, num_joints):
 
         # F TO GO RIGHT
         if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
-            rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
+            rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
         # S TO GO LEFT
         elif ord('s') in keys and keys[ord('s')] & p.KEY_IS_DOWN:
-            rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5)
+            rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
         # E TO GO FORWARDS
         elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
             perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
