@@ -35,11 +35,16 @@ for joint in range(num_joints):
 
 # Function to update the camera to follow the robot
 def update_camera(robot_id, camera_distance=2):
-    robot_pos, _ = p.getBasePositionAndOrientation(robot_id)
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]  # yaw is the rotation around the z-axis
+    camera_yaw = robot_yaw * (180.0 / math.pi)
+
+    # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
-        cameraYaw=p.getDebugVisualizerCamera()[8],
-        cameraPitch= -30,
+        cameraYaw=camera_yaw + 90,  # 180 degrees to point the camera behind the robot
+        cameraPitch=-30,
         cameraTargetPosition=robot_pos
     )
 
