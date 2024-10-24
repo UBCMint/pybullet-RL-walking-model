@@ -4,246 +4,219 @@ import time
 import os
 import math
 
-# Get the current directory and URDF path
+# Set up PyBullet environment
 current_dir = os.path.dirname(os.path.realpath(__file__))
 urdf_path = os.path.join(current_dir, 'stridebot.urdf')
 
 # Connect to PyBullet
-physicsClient = p.connect(p.GUI)  # Use p.DIRECT for non-graphical version
-
+physicsClient = p.connect(p.GUI)  
 p.setRealTimeSimulation(1)
-# Set the search path to find built-in URDF files and load the plane
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setGravity(0, 0, -10)
+p.setGravity(0, 0, -9.8)
 
 # Load a plane for the robot to walk on
 planeId = p.loadURDF('plane.urdf')
 
-# Set a larger time step to increase the speed of joint movements
-p.setTimeStep(1. / 240.)
-
 # Define initial position and orientation of the robot
-cubeStartPos = [0, 0, 0.3]
+cubeStartPos = [0, 0, 0.4]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
 # Load the custom quadruped URDF
 boxId = p.loadURDF(urdf_path, cubeStartPos, cubeStartOrientation)
 
-# Get the number of joints and print their information
 num_joints = p.getNumJoints(boxId)
 print(f"Number of joints: {num_joints}")
 
-# Increase the friction for the ground to reduce slipping
-p.changeDynamics(planeId, -1, lateralFriction=10.0)  # Increased friction value
-
 # Set up initial dynamics for the robot's legs to ensure good ground contact
 for joint in range(num_joints):
-    p.changeDynamics(boxId, joint, lateralFriction=5.0)  # Increased friction for legs
+    p.changeDynamics(boxId, joint, lateralFriction=10.0)
 
-# Set initial angle for legs to start at 45 degrees
-initial_angle = math.pi / 4  # 45 degrees in radians
 
-rotational_initial_height = -0.1  # Initial height for the rotational joints (lowered by 0.2 meters)
 
-rotational_joints = [0, 1, 2, 3]  # Continuous joints for front_left, front_right, back_left, back_right
-
-# Set the initial angle for all the rotational joints
-p.resetJointState(boxId, rotational_joints[0], -initial_angle)  # front_left_leg
-p.resetJointState(boxId, rotational_joints[2], -initial_angle)  # back_left_leg
-p.resetJointState(boxId, rotational_joints[1], initial_angle)   # front_right_leg
-p.resetJointState(boxId, rotational_joints[3], initial_angle)   # back_right_leg
-
+# Function to update the camera to follow the robot
 def update_camera(robot_id, camera_distance=2):
-    # Get the current position of the robot
-    robot_pos, _ = p.getBasePositionAndOrientation(robot_id)
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]  # yaw is the rotation around the z-axis
+    camera_yaw = robot_yaw * (180.0 / math.pi)
 
-    # Set camera to follow the robot's base position
+    # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
-        cameraDistance=camera_distance,   # Adjust the zoom level
-        cameraYaw=p.getDebugVisualizerCamera()[8],       # Camera angle around the Z-axis
-        cameraPitch=-30,                  # Camera angle up/down
-        cameraTargetPosition=robot_pos    # Set camera target to robot's position
+        cameraDistance=camera_distance,
+        cameraYaw=camera_yaw + 90,
+        cameraPitch=-30,
+        cameraTargetPosition=robot_pos
     )
 
-# Print joint information for debugging and mapping
-for i in range(num_joints):
-    joint_info = p.getJointInfo(boxId, i)
-    print(f"Joint {i}: Name={joint_info[1].decode('utf-8')} Type={joint_info[2]}")
 
 # Function to move joints with velocity control for smoother motion
-def move_joints_to_target_position(robot_id, target_positions, force=200):
-    for joint_index, position in enumerate(target_positions):
+# Joint indices for rotational and prismatic joints
+rotational_joints = [1, 3, 5, 7]  # Indices of the rotational joints for each leg
+prismatic_joints = [0, 2, 4, 6]  # Indices of the prismatic joints for each leg
+
+# Function to move both prismatic and rotational joints
+def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force, prismatic_force = 50):
+    # Move prismatic joints (vertical movement)
+    for joint_index, position in enumerate(prismatic_positions):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
-            jointIndex=rotational_joints[joint_index],  # Only controlling rotational joints
+            jointIndex=prismatic_joints[joint_index],  # Prismatic joints
             controlMode=p.POSITION_CONTROL,
-            maxVelocity=2,
-            targetPosition=position,  # Target position in radians
-            force=force,
-            positionGain=0.1  # Optional: Adjust gain for smoother control
+            targetPosition=position,  # Target vertical position
+            force=prismatic_force,
         )
-
-
-def get_link_index_by_name(robot_id, link_name):
-    num_joints = p.getNumJoints(robot_id)
-    for i in range(num_joints):
-        joint_info = p.getJointInfo(robot_id, i)
-        current_link_name = joint_info[12].decode('utf-8')  # Link name is stored at index 12
-        if current_link_name == link_name:
-            print(f"Index is  {i}")
-            return i
-    return None  # Return None if the link name is not found
-
-# Function to change the friction for a link by its name
-def change_leg_friction_by_name(robot_id, link_name, friction_value):
-    link_index = get_link_index_by_name(robot_id, link_name)
-    if link_index is not None:
-        p.changeDynamics(robot_id, link_index, lateralFriction=friction_value)
-        print(f"Changed friction for {link_name} (index {link_index}) to {friction_value}")
-    else:
-        print(f"Link name {link_name} not found.")
-
-# Function to create a consistent walking motion between -45 degrees and +45 degrees
-# Function to check if all joints have reached the target positions
-def joints_reached_target(robot_id, target_positions):
-    for joint_index, target_position in enumerate(target_positions):
-        joint_state = p.getJointState(robot_id, rotational_joints[joint_index])
-        current_position = joint_state[0]  # Joint position is the first element in the tuple
-        # Check if the current position is close to the target position (tolerance of 0.05 radians)
-        if abs(current_position - target_position) > 0.05:
-            return False
-    return True
-
-# Function to create a consistent walking motion between -45 degrees and +45 degrees with only angle checks
-def perform_fast_walking_motion(robot_id, num_joints, step_angle=math.pi/4, force=100, steps_per_cycle=25):
-    # Split the legs into two groups for alternating movements
-    left_legs = [0, 2]  # Left legs (rotational joints 0 and 2)
-    right_legs = [1, 3]  # Right legs (rotational joints 1 and 3)
-
-    while True:
-        # Step 1: Move left legs to +45 degrees (forward), right legs to -45 degrees (backward)
-        joint_positions = [0] * len(rotational_joints)
-        for leg in left_legs:
-            joint_positions[leg] = step_angle  # Left legs forward to +45 degrees
-        for leg in right_legs:
-            joint_positions[leg] = -step_angle  # Right legs backward to -45 degrees
-
-        # Adjust friction for the legs
-        change_leg_friction_by_name(boxId, "front_right_leg", 5)
-        change_leg_friction_by_name(boxId, "back_right_leg", 5)
-        change_leg_friction_by_name(boxId, "front_left_leg", 0.2)
-        change_leg_friction_by_name(boxId, "back_left_leg", 0.2)
-        
-        # Move the joints to the target positions
-        move_joints_to_target_position(robot_id, joint_positions, force)
-
-        # Simulate for a portion of the cycle to observe movement
-        for _ in range(steps_per_cycle):
-            p.stepSimulation()
-            update_camera(robot_id)
-            time.sleep(1./500.)
-
-        # Wait until all joints have reached the target positions (angle check only)
-        while not joints_reached_target(robot_id, joint_positions):
-            p.stepSimulation()
-            update_camera(robot_id)
-            time.sleep(1./500.)
-
-        # Step 2: Move left legs to -45 degrees (backward), right legs to +45 degrees (forward)
-        for leg in left_legs:
-            joint_positions[leg] = -step_angle  # Left legs backward to -45 degrees
-        for leg in right_legs:
-            joint_positions[leg] = step_angle  # Right legs forward to +45 degrees
-
-        # Adjust friction for the legs
-        change_leg_friction_by_name(boxId, "front_right_leg", 0.2)
-        change_leg_friction_by_name(boxId, "back_right_leg", 0.2)
-        change_leg_friction_by_name(boxId, "front_left_leg", 5)
-        change_leg_friction_by_name(boxId, "back_left_leg", 5)
-        
-        # Move the joints to the target positions
-        move_joints_to_target_position(robot_id, joint_positions, force)
-
-        # Simulate for a portion of the cycle to observe movement
-        for _ in range(steps_per_cycle):
-            p.stepSimulation()
-            update_camera(robot_id)
-            time.sleep(1./500.)
-
-        # Wait until all joints have reached the target positions (angle check only)
-        while not joints_reached_target(robot_id, joint_positions):
-            p.stepSimulation()
-            update_camera(robot_id)
-            time.sleep(1./500.)
-
-# Function to move joints using position control for smoother motion (FROM NIMA'S IMPLEMENTATION)
-def move_joints_to_position(robot_id, joint_positions, max_force=50):
-    """
-    Move the robot's joints using position control.
-    :param robot_id: ID of the robot in the simulation.
-    :param joint_positions: List of target positions for each joint.
-    :param max_force: Maximum force applied to each joint motor.
-    """
-    for joint_index, position in enumerate(joint_positions):
+    
+    # Move rotational joints (leg movement)
+    for joint_index, position in enumerate(rotational_positions):
         p.setJointMotorControl2(
             bodyUniqueId=robot_id,
-            jointIndex=joint_index,
+            jointIndex=rotational_joints[joint_index],  # Rotational joints
             controlMode=p.POSITION_CONTROL,
-            targetPosition=position,
-            force=max_force
+            targetPosition=position,  # Target angular position
+            force=rotational_force,
+            maxVelocity=4
         )
 
-# Function to create a consistent walking motion with sinusoidal patterns
-def perform_gait_motion(robot_id, num_joints, step_length=0.3, step_height=0.2, speed=0.1):
-    """
-    Perform a simple alternating gait motion using sinusoidal control for coordinated leg movements.
-    :param robot_id: ID of the robot in the simulation.
-    :param num_joints: Number of joints to control.
-    :param step_length: Amplitude of the movement forward and backward.
-    :param step_height: Amplitude of the upward and downward movement.
-    :param speed: Speed of the leg movements.
-    """
-    phase_offset = math.pi  # Offset for alternating legs (180 degrees)
-
-    # Assign indices of the legs to create a trot gait pattern
-    left_legs = [0, 2]  # Left legs joint indices
-    right_legs = [1, 3]  # Right legs joint indices
+# Modify perform_trot_gait to control both prismatic and rotational joints
+def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
+    phase_offset = math.pi  # Offset for alternating legs
+    prismatic_offset = math.pi / 2
+    # Indices for diagonal pairs of legs
+    diagonal_1 = [0, 3]  # Front left and back right
+    diagonal_2 = [1, 2]  # Front right and back left
 
     time_step = 0
-
-    # Run the gait for a specified number of steps
-    for _ in range(1000):
+    
+    start_time = time.time()  # Record the start time
+    while True:
         time_step += speed
+        prismatic_positions = [0] * len(prismatic_joints)
+        rotational_positions = [0] * len(rotational_joints)
 
-        # Calculate joint positions based on a simple sinusoidal function for each leg
-        joint_positions = [0] * num_joints
-        for joint in left_legs:
-            # Moving left legs in a sinusoidal pattern
-            joint_positions[joint] = step_length * math.sin(time_step)  # Move forward/backward
-            joint_positions[joint] += step_height * math.cos(time_step)  # Move up/down
+        # Move diagonal_1 (front left and back right) first
+        for joint in diagonal_1:
+            rotational_positions[joint] = step_length * math.sin(time_step)  # Forward/backward motion
+            if math.sin(time_step + prismatic_offset) > 0:
+                prismatic_positions[joint] = step_height  # Lift the leg
+            else:
+                prismatic_positions[joint] = 0  # Push the leg down during stance
 
-        for joint in right_legs:
-            # Moving right legs in the opposite phase of left legs
-            joint_positions[joint] = step_length * math.sin(time_step + phase_offset)
-            joint_positions[joint] += step_height * math.cos(time_step + phase_offset)
+        # Move diagonal_2 (front right and back left) with a phase offset
+        for joint in diagonal_2:
+            rotational_positions[joint] = step_length * math.sin(time_step + phase_offset)
+            if math.sin(time_step + phase_offset + prismatic_offset) > 0:
+                prismatic_positions[joint] = step_height  # Lift the leg
+            else:
+                prismatic_positions[joint] = 0  # Push the leg down during stance
 
-        # Apply the positions to the joints using position control
-        move_joints_to_position(robot_id, joint_positions)
+        # Apply prismatic and rotational joint movements
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600)
 
-        # Apply a small forward force to the robot's base link to encourage movement
-        p.applyExternalForce(robot_id, -1, [50, 0, 0], [0, 0, 0], p.WORLD_FRAME)  # Adjust force as needed
-
-        # Step the simulation forward to see the effect
+        # Step the simulation and update the camera
         p.stepSimulation()
-        time.sleep(1. / 240.)
+        update_camera(robot_id)
+        time.sleep(1./240.)
+        if (ord('e') not in p.getKeyboardEvents() and step_length == 0.3) or (ord('d') not in p.getKeyboardEvents() and step_length == -0.3):
+            break
+
+def do_nothing(robot_id):
+    start_time = time.time()  # Record the start time
+    while True:
+        p.stepSimulation()
+        update_camera(robot_id)
+        time.sleep(1./240.)
+        keys = p.getKeyboardEvents()
+        if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys:
+            break
+
+def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
+    # direction = True ---> Rotate right, direction = False ---> Rotate left
+    if (direction):
+        lift_joints = [1, 3]  # Front-left and back-left
+        non_lift_joints = [0, 2]
+    else:
+        lift_joints = [0, 2]  # Front-left and back-left
+        non_lift_joints = [1, 3]
+
+    
+    # Initialize time tracking
+    time_step = 0
+    start_time = time.time()
+
+    while True:
+        if (ord('f') not in p.getKeyboardEvents() and direction) or (ord('s') not in p.getKeyboardEvents() and not direction):
+            break
+        time_step += speed
+        prismatic_positions = [0] * len(prismatic_joints)
+        rotational_positions = [0] * len(rotational_joints)
+
+        # Step 1: Lift the left-side legs using prismatic joints (jump)
+        for joint in lift_joints:
+            prismatic_positions[joint] = 0  # Lift the leg
+        for joint in non_lift_joints:
+            prismatic_positions[joint] = 0  
+        # Apply the prismatic and rotational joint movements
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 1000)
+
+        # Step the simulation and update the camera
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
+
+        for joint in (lift_joints + non_lift_joints):
+            prismatic_positions[joint] = step_height
+        for joint in lift_joints:
+            rotational_positions[joint] = rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
+        for joint in non_lift_joints:
+            rotational_positions[joint] = -rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
+
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
+
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
+        # Step 3: Bring the lifted legs back to the ground (lower)
+        for joint in lift_joints + non_lift_joints:
+            prismatic_positions[joint] = step_height  # Lower the leg
+            rotational_positions[joint] = 0
+
+        # Apply the prismatic and rotational joint movements to return to the start
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
+
+        # Step the simulation and update the camera
+        for _ in range(steps_per_cycle):
+            p.stepSimulation()
+            update_camera(robot_id)
+            time.sleep(1./240.)
+    
+
+def control_robot_with_keys(robot_id, num_joints):
+    while True:
+        keys = p.getKeyboardEvents()
+
+        # F TO GO RIGHT
+        if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
+            rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
+        # S TO GO LEFT
+        elif ord('s') in keys and keys[ord('s')] & p.KEY_IS_DOWN:
+            rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
+        # E TO GO FORWARDS
+        elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
+            perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
+        # D TO GO BACKWARDS
+        elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
+            perform_trot_gait(boxId, num_joints, step_length= -0.3, step_height=0.2, speed=0.4)
+            
+        elif not (ord('w') in keys or ord('a') in keys or ord('s') in keys or ord('d') in keys):  # If no keys are pressed at all
+            do_nothing(robot_id)
+
+        p.stepSimulation()
+        time.sleep(1./240.)
 
 
-
-# UNCOMMENT THE ONE YOU WANT TO RUN (AND COMMENT THE OTHER ONE):
-
-#perform_gait_motion(boxId, num_joints, step_length=0.3, step_height=0.1, speed=0.2)
-perform_fast_walking_motion(boxId, num_joints, step_angle=math.pi/4, force=16)
-
+control_robot_with_keys(boxId, num_joints)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
