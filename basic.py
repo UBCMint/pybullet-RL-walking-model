@@ -43,7 +43,7 @@ def update_camera(robot_id, camera_distance=2):
     # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
-        cameraYaw=camera_yaw + 90,
+        cameraYaw=camera_yaw + 90,  # p.getDebugVisualizerCamera()[8] # camera_yaw + 90
         cameraPitch=-30,
         cameraTargetPosition=robot_pos
     )
@@ -191,6 +191,25 @@ def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math
             update_camera(robot_id)
             time.sleep(1./240.)
     
+def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0):
+    # Get the robot's current position and orientation
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+
+    # Convert the orientation quaternion to Euler angles to get the yaw
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]  # yaw is the third element
+    forward_direction = [math.cos(robot_yaw), math.sin(robot_yaw), 0]
+
+    box_position = [
+        robot_pos[0] + forward_direction[0] * distance_ahead,
+        robot_pos[1] + forward_direction[1] * distance_ahead,
+        robot_pos[2] + 0.3
+    ]
+
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    cube_urdf_path = os.path.join(current_dir, "goal_box.urdf")
+    box_orientation = p.getQuaternionFromEuler([0, 0, 0])
+    p.loadURDF(cube_urdf_path, box_position, box_orientation)
 
 def control_robot_with_keys(robot_id, num_joints):
     while True:
@@ -204,17 +223,16 @@ def control_robot_with_keys(robot_id, num_joints):
             rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
         # E TO GO FORWARDS
         elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
+            spawn_box_in_direction_of_motion(robot_id, distance_ahead= -5.0) 
             perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
         # D TO GO BACKWARDS
         elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
             perform_trot_gait(boxId, num_joints, step_length= -0.3, step_height=0.2, speed=0.4)
-            
         elif not (ord('w') in keys or ord('a') in keys or ord('s') in keys or ord('d') in keys):  # If no keys are pressed at all
             do_nothing(robot_id)
 
         p.stepSimulation()
         time.sleep(1./240.)
-
 
 control_robot_with_keys(boxId, num_joints)
 
