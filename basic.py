@@ -191,7 +191,15 @@ def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math
             update_camera(robot_id)
             time.sleep(1./240.)
     
+
+last_box_id = None
+
 def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0):
+    global last_box_id
+
+    if last_box_id is not None:
+        p.removeBody(last_box_id)
+        
     # Get the robot's current position and orientation
     robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
 
@@ -209,7 +217,9 @@ def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0):
     current_dir = os.path.dirname(os.path.realpath(__file__))
     cube_urdf_path = os.path.join(current_dir, "goal_box.urdf")
     box_orientation = p.getQuaternionFromEuler([0, 0, 0])
-    p.loadURDF(cube_urdf_path, box_position, box_orientation)
+
+    # Spawn the new box and store its ID
+    last_box_id = p.loadURDF(cube_urdf_path, box_position, box_orientation)
 
 def control_robot_with_keys(robot_id, num_joints):
     while True:
