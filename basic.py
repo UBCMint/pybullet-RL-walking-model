@@ -3,6 +3,7 @@ import pybullet_data
 import time
 import os
 import math
+import numpy as np
 
 # Set up PyBullet environment
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -118,6 +119,7 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         time.sleep(1./240.)
         if (ord('e') not in p.getKeyboardEvents() and step_length == 0.3) or (ord('d') not in p.getKeyboardEvents() and step_length == -0.3):
             break
+        calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
 
 def do_nothing(robot_id):
     start_time = time.time()  # Record the start time
@@ -220,6 +222,39 @@ def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0):
 
     # Spawn the new box and store its ID
     last_box_id = p.loadURDF(cube_urdf_path, box_position, box_orientation)
+
+def calculate_angle_and_distance(robot_id, box_id):
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]
+    
+    # Get the box's position
+    box_pos, _ = p.getBasePositionAndOrientation(box_id)
+
+    # Calculate the direction vector from robot to box
+    direction_to_box = np.array([box_pos[0] - robot_pos[0], box_pos[1] - robot_pos[1]])
+
+    # Calculate the forward direction of the robot
+    robot_forward = np.array([np.cos(robot_yaw), np.sin(robot_yaw)])
+
+    # Calculate the angle between the forward direction and the direction to the box
+    dot_product = np.dot(robot_forward, direction_to_box)
+    magnitude_product = np.linalg.norm(robot_forward) * np.linalg.norm(direction_to_box)
+    
+    if magnitude_product == 0:
+        angle_degrees = 0
+    else:
+        cos_theta = dot_product / magnitude_product
+        angle_radians = np.arccos(np.clip(cos_theta, -1.0, 1.0))
+        angle_degrees = np.degrees(angle_radians)
+
+    
+    distance = np.linalg.norm(direction_to_box)
+    angle_degrees -= 180
+    print(f"Angle between robot's front and box: {angle_degrees} degrees")
+    print(f"Distance between robot and box: {distance} meters")
+    
+    return angle_degrees, distance
 
 def control_robot_with_keys(robot_id, num_joints):
     while True:
