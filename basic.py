@@ -44,7 +44,7 @@ def update_camera(robot_id, camera_distance=2):
     # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
-        cameraYaw=camera_yaw + 90,  # p.getDebugVisualizerCamera()[8] # camera_yaw + 90
+        cameraYaw=p.getDebugVisualizerCamera()[8],  # p.getDebugVisualizerCamera()[8] # camera_yaw + 90
         cameraPitch=-30,
         cameraTargetPosition=robot_pos
     )
