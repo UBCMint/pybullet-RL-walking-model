@@ -22,7 +22,8 @@ planeId = p.loadURDF('plane.urdf')
 cubeStartPos = [0, 0, 0.4]
 cubeStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
-# Load the custom quadruped URDF
+# Load the custom quadruped robot URDF
+# THIS IS NOT THE GOAL BOX, this refers to the body of the robot
 boxId = p.loadURDF(urdf_path, cubeStartPos, cubeStartOrientation)
 
 num_joints = p.getNumJoints(boxId)
@@ -81,7 +82,7 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_
 calculate = False
 last_box_id = None
 # Modify perform_trot_gait to control both prismatic and rotational joints
-def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
+def perform_trot_gait(robot_id, step_length=0.3, step_height=0.1, speed=0.1):
     global calculate
     phase_offset = math.pi  # Offset for alternating legs
     prismatic_offset = math.pi / 2
@@ -139,7 +140,7 @@ def do_nothing(robot_id):
         if (calculate):
             calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
 
-def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
+def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
     global calculate
     # direction = True ---> Rotate right, direction = False ---> Rotate left
     if (direction):
@@ -271,22 +272,22 @@ def calculate_angle_and_distance(robot_id, box_id):
     print(f"Distance between robot and box: {distance}")
     # return angle_degrees, distance
 
-def control_robot_with_keys(robot_id, num_joints):
+def control_robot_with_keys(robot_id):
     global calculate
     while True:
         keys = p.getKeyboardEvents()
         # F TO GO RIGHT
         if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
-            rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
+            rotate(boxId, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
         # S TO GO LEFT
         elif ord('s') in keys and keys[ord('s')] & p.KEY_IS_DOWN:
-            rotate(boxId, num_joints, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
+            rotate(boxId, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
         # E TO GO FORWARDS
         elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
-            perform_trot_gait(boxId, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
+            perform_trot_gait(boxId, step_length=0.3, step_height=0.2, speed=0.4)
         # D TO GO BACKWARDS
         elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
-            perform_trot_gait(boxId, num_joints, step_length= -0.3, step_height=0.2, speed=0.4)
+            perform_trot_gait(boxId, step_length= -0.3, step_height=0.2, speed=0.4)
         elif ord('k') in keys and keys[ord('k')] & p.KEY_IS_DOWN:
             spawn_box_in_direction_of_motion(robot_id, distance_ahead=0, side_offset=5) 
             calculate = True
@@ -307,7 +308,7 @@ def control_robot_with_keys(robot_id, num_joints):
 
         
 
-control_robot_with_keys(boxId, num_joints)
+control_robot_with_keys(boxId)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
