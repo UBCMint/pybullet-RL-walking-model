@@ -3,6 +3,7 @@ import pybullet_data
 import time
 import os
 import math
+import numpy as np
 
 # Set up PyBullet environment
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -43,7 +44,7 @@ def update_camera(robot_id, camera_distance=2):
     # Update the camera with the calculated yaw
     p.resetDebugVisualizerCamera(
         cameraDistance=camera_distance,
-        cameraYaw=camera_yaw + 90,
+        cameraYaw=p.getDebugVisualizerCamera()[8],  # p.getDebugVisualizerCamera()[8] # camera_yaw + 90
         cameraPitch=-30,
         cameraTargetPosition=robot_pos
     )
@@ -77,8 +78,11 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_
             maxVelocity=4
         )
 
+calculate = False
+last_box_id = None
 # Modify perform_trot_gait to control both prismatic and rotational joints
 def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
+    global calculate
     phase_offset = math.pi  # Offset for alternating legs
     prismatic_offset = math.pi / 2
     # Indices for diagonal pairs of legs
@@ -118,18 +122,25 @@ def perform_trot_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, sp
         time.sleep(1./240.)
         if (ord('e') not in p.getKeyboardEvents() and step_length == 0.3) or (ord('d') not in p.getKeyboardEvents() and step_length == -0.3):
             break
+        if (calculate):
+            calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
+       
 
 def do_nothing(robot_id):
+    global calculate
     start_time = time.time()  # Record the start time
     while True:
         p.stepSimulation()
         update_camera(robot_id)
         time.sleep(1./240.)
         keys = p.getKeyboardEvents()
-        if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys:
+        if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys or ord('k') in keys or ord('h') in keys or ord('u') in keys or ord('j') in keys:
             break
+        if (calculate):
+            calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
 
 def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
+    global calculate
     # direction = True ---> Rotate right, direction = False ---> Rotate left
     if (direction):
         lift_joints = [1, 3]  # Front-left and back-left
@@ -190,12 +201,80 @@ def rotate(robot_id, num_joints, direction, step_height=0.2, rotation_angle=math
             p.stepSimulation()
             update_camera(robot_id)
             time.sleep(1./240.)
+        if (calculate):
+            calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
     
 
+
+
+def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0, side_offset = 0):    # if offset is positive the box is to the right
+    distance_ahead = -distance_ahead
+
+    global last_box_id
+
+    if last_box_id is not None:
+        p.removeBody(last_box_id)
+        
+    # Get the robot's current position and orientation
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+
+    # Convert the orientation quaternion to Euler angles to get the yaw
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]  # yaw is the third element
+    forward_direction = [math.cos(robot_yaw), math.sin(robot_yaw), 0]
+    side_direction = [-math.sin(robot_yaw), math.cos(robot_yaw), 0]
+
+    box_position = [
+        robot_pos[0] + forward_direction[0] * distance_ahead + side_direction[0] * side_offset,
+        robot_pos[1] + forward_direction[1] * distance_ahead + side_direction[1] * side_offset,
+        robot_pos[2] + 0.3
+    ]
+
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    cube_urdf_path = os.path.join(current_dir, "goal_box.urdf")
+    box_orientation = p.getQuaternionFromEuler([0, 0, 0])
+
+    # Spawn the new box and store its ID
+    last_box_id = p.loadURDF(cube_urdf_path, box_position, box_orientation)
+
+
+def calculate_angle_and_distance(robot_id, box_id):
+    
+    robot_pos, robot_orientation = p.getBasePositionAndOrientation(robot_id)
+    robot_euler = p.getEulerFromQuaternion(robot_orientation)
+    robot_yaw = robot_euler[2]
+
+    # Get the box's position
+    box_pos, _ = p.getBasePositionAndOrientation(box_id)
+
+    # Calculate the direction vector from robot to box
+    direction_to_box = np.array([box_pos[0] - robot_pos[0], box_pos[1] - robot_pos[1]])
+
+    # Calculate the forward direction of the robot
+    robot_forward = np.array([np.cos(robot_yaw), np.sin(robot_yaw)])
+
+    # Calculate the angle between the forward direction and the direction to the box
+    dot_product = np.dot(robot_forward, direction_to_box)
+    magnitude_product = np.linalg.norm(robot_forward) * np.linalg.norm(direction_to_box)
+
+    if magnitude_product == 0:
+        angle_degrees = 0
+    else:
+        cos_theta = dot_product / magnitude_product
+        angle_radians = np.arccos(np.clip(cos_theta, -1.0, 1.0))
+        angle_degrees = np.degrees(angle_radians)
+
+
+    distance = np.linalg.norm(direction_to_box)
+    angle_degrees -= 180
+    print(f"Angle between robot's front and box: {angle_degrees} degrees")
+    print(f"Distance between robot and box: {distance}")
+    # return angle_degrees, distance
+
 def control_robot_with_keys(robot_id, num_joints):
+    global calculate
     while True:
         keys = p.getKeyboardEvents()
-
         # F TO GO RIGHT
         if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
             rotate(boxId, num_joints, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
@@ -208,13 +287,25 @@ def control_robot_with_keys(robot_id, num_joints):
         # D TO GO BACKWARDS
         elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
             perform_trot_gait(boxId, num_joints, step_length= -0.3, step_height=0.2, speed=0.4)
-            
+        elif ord('k') in keys and keys[ord('k')] & p.KEY_IS_DOWN:
+            spawn_box_in_direction_of_motion(robot_id, distance_ahead=0, side_offset=5) 
+            calculate = True
+        elif ord('h') in keys and keys[ord('h')] & p.KEY_IS_DOWN:
+            spawn_box_in_direction_of_motion(robot_id, distance_ahead=0, side_offset=-5) 
+            calculate = True
+        elif ord('u') in keys and keys[ord('u')] & p.KEY_IS_DOWN:
+            spawn_box_in_direction_of_motion(robot_id, distance_ahead=5, side_offset=0) 
+            calculate = True
+        elif ord('j') in keys and keys[ord('j')] & p.KEY_IS_DOWN:
+            spawn_box_in_direction_of_motion(robot_id, distance_ahead=-5, side_offset=0) 
+            calculate = True
         elif not (ord('w') in keys or ord('a') in keys or ord('s') in keys or ord('d') in keys):  # If no keys are pressed at all
             do_nothing(robot_id)
 
         p.stepSimulation()
         time.sleep(1./240.)
 
+        
 
 control_robot_with_keys(boxId, num_joints)
 
