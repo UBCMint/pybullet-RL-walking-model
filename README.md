@@ -11,6 +11,8 @@ H TO SPAWN BOX ON THE LEFT
 U TO SPAWN BOX IN THE FRONT  
 J TO SPAWN BOX IN THE BACK  
 
+**Note:** The simulation is not sensitive enough to detect keystrokes for the box spawn if the key is pressed very briefly, try to press the key for half a second to make sure the box spawns.
+
 # Code Documentation (For the basic.py file)
 The global variables and functions are listed alphabetically.
 ## Global Variables
