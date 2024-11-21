@@ -4,6 +4,7 @@ import time
 import os
 import math
 import numpy as np
+import random
 
 # Set up PyBullet environment
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -31,7 +32,7 @@ print(f"Number of joints: {num_joints}")
 
 # Set up initial dynamics for the robot's legs to ensure good ground contact
 for joint in range(num_joints):
-    p.changeDynamics(boxId, joint, lateralFriction=10.0)
+    p.changeDynamics(boxId, joint, lateralFriction=50.0)
 
 
 
@@ -57,7 +58,7 @@ rotational_joints = [1, 3, 5, 7]  # Indices of the rotational joints for each le
 prismatic_joints = [0, 2, 4, 6]  # Indices of the prismatic joints for each leg
 
 # Function to move both prismatic and rotational joints
-def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force, prismatic_force = 50):
+def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 50):
     # Move prismatic joints (vertical movement)
     for joint_index, position in enumerate(prismatic_positions):
         p.setJointMotorControl2(
@@ -115,8 +116,9 @@ def perform_trot_gait(robot_id, step_length=0.3, step_height=0.1, speed=0.1):
                 prismatic_positions[joint] = 0  # Push the leg down during stance
 
         # Apply prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600)
+        move_joints(robot_id, prismatic_positions, rotational_positions)
 
+        detect_collision(robot_id)
         # Step the simulation and update the camera
         p.stepSimulation()
         update_camera(robot_id)
@@ -131,14 +133,14 @@ def do_nothing(robot_id):
     global calculate
     start_time = time.time()  # Record the start time
     while True:
-        p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./240.)
         keys = p.getKeyboardEvents()
         if ord('e') in keys or ord('s') in keys or ord('d') in keys or ord('f') in keys or ord('k') in keys or ord('h') in keys or ord('u') in keys or ord('j') in keys:
             break
         if (calculate):
             calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
+        p.stepSimulation()
+        update_camera(robot_id)
+        time.sleep(1./240.)
 
 def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, speed=0.2, steps_per_cycle = 5):
     global calculate
@@ -168,7 +170,7 @@ def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, spe
         for joint in non_lift_joints:
             prismatic_positions[joint] = 0  
         # Apply the prismatic and rotational joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 1000)
+        move_joints(robot_id, prismatic_positions, rotational_positions, prismatic_force = 500)
 
         # Step the simulation and update the camera
         for _ in range(steps_per_cycle):
@@ -183,7 +185,7 @@ def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, spe
         for joint in non_lift_joints:
             rotational_positions[joint] = -rotation_angle * abs(math.sin(time_step))  # Rotate the leg forward
 
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
+        move_joints(robot_id, prismatic_positions, rotational_positions, prismatic_force = 500)
 
         for _ in range(steps_per_cycle):
             p.stepSimulation()
@@ -195,7 +197,7 @@ def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, spe
             rotational_positions[joint] = 0
 
         # Apply the prismatic and rotational joint movements to return to the start
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force = 600, prismatic_force = 200)
+        move_joints(robot_id, prismatic_positions, rotational_positions, prismatic_force = 500)
 
         # Step the simulation and update the camera
         for _ in range(steps_per_cycle):
@@ -204,11 +206,12 @@ def rotate(robot_id, direction, step_height=0.2, rotation_angle=math.pi / 4, spe
             time.sleep(1./240.)
         if (calculate):
             calculate_angle_and_distance(robot_id=boxId, box_id=last_box_id)
+        detect_collision(robot_id)
     
 
 
 
-def spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0, side_offset = 0):    # if offset is positive the box is to the right
+def spawn_box(robot_id, distance_ahead=1.0, side_offset = 0):    # if offset is positive the box is to the right
     distance_ahead = -distance_ahead
 
     global last_box_id
@@ -268,41 +271,82 @@ def calculate_angle_and_distance(robot_id, box_id):
 
     distance = np.linalg.norm(direction_to_box)
     angle_degrees -= 180
-    print(f"Angle between robot's front and box: {angle_degrees} degrees")
-    print(f"Distance between robot and box: {distance}")
+    print(f"Angle between the robot and the box: {angle_degrees} degrees")
+    print(f"Distance between the robot and the box: {distance}")
     # return angle_degrees, distance
+
+
+last_box_position = None
+
+def detect_collision(robot_id):
+    global last_box_position
+
+    # Get the current position of the box
+    box_position, _ = p.getBasePositionAndOrientation(last_box_id)
+
+    # Check if this is the first time the function is called
+    if last_box_position is None:
+        last_box_position = box_position  # Initialize the position
+        return False  # No movement detected yet
+
+    # Check if the box moved in the x or y direction
+    movement_detected = (
+        abs(box_position[0] - last_box_position[0]) > 1e-3 or  # Movement in x
+        abs(box_position[1] - last_box_position[1]) > 1e-3     # Movement in y
+    )
+
+    # radius is the variable determining how far away the box will spawn around the robot, the box is spawned in a random position around a circle area of the robot
+    radius = random.uniform(2, 5)
+    # Generate a random angle in radians
+    angle = random.uniform(0, 2 * math.pi)
+
+    # Calculate x and y coordinates on the circle
+    x_offset = radius * math.cos(angle)
+    y_offset = radius * math.sin(angle)
+    
+    if movement_detected:
+        print(f"Box moved! New position: {box_position}")
+        spawn_box(robot_id, distance_ahead=y_offset, side_offset=x_offset)
+        # Update the last known position of the box
+        last_box_position, _ = p.getBasePositionAndOrientation(last_box_id)
+
 
 def control_robot_with_keys(robot_id):
     global calculate
+    spawn_box(robot_id, distance_ahead=2, side_offset=0) 
+    calculate = True
     while True:
         keys = p.getKeyboardEvents()
         # F TO GO RIGHT
         if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
-            rotate(boxId, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
+            rotate(robot_id, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
         # S TO GO LEFT
         elif ord('s') in keys and keys[ord('s')] & p.KEY_IS_DOWN:
-            rotate(boxId, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
+            rotate(robot_id, direction = False, step_height=0.2, rotation_angle=math.pi / 4)
         # E TO GO FORWARDS
         elif ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
-            perform_trot_gait(boxId, step_length=0.3, step_height=0.2, speed=0.4)
+            perform_trot_gait(robot_id, step_length=0.3, step_height=0.2, speed=0.4)
         # D TO GO BACKWARDS
         elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
-            perform_trot_gait(boxId, step_length= -0.3, step_height=0.2, speed=0.4)
-        elif ord('k') in keys and keys[ord('k')] & p.KEY_IS_DOWN:
-            spawn_box_in_direction_of_motion(robot_id, distance_ahead=0, side_offset=5) 
-            calculate = True
-        elif ord('h') in keys and keys[ord('h')] & p.KEY_IS_DOWN:
-            spawn_box_in_direction_of_motion(robot_id, distance_ahead=0, side_offset=-5) 
-            calculate = True
-        elif ord('u') in keys and keys[ord('u')] & p.KEY_IS_DOWN:
-            spawn_box_in_direction_of_motion(robot_id, distance_ahead=5, side_offset=0) 
-            calculate = True
-        elif ord('j') in keys and keys[ord('j')] & p.KEY_IS_DOWN:
-            spawn_box_in_direction_of_motion(robot_id, distance_ahead=-5, side_offset=0) 
-            calculate = True
-        elif not (ord('w') in keys or ord('a') in keys or ord('s') in keys or ord('d') in keys):  # If no keys are pressed at all
+            perform_trot_gait(robot_id, step_length= -0.3, step_height=0.2, speed=0.4)
+
+        # BOX IS NOW SPAWNED IN RANDOM POSITIONS
+        # elif ord('k') in keys and keys[ord('k')] & p.KEY_IS_DOWN:
+        #     spawn_box(robot_id, distance_ahead=0, side_offset=5) 
+        #     calculate = True
+        # elif ord('h') in keys and keys[ord('h')] & p.KEY_IS_DOWN:
+        #     spawn_box(robot_id, distance_ahead=0, side_offset=-5) 
+        #     calculate = True
+        # elif ord('u') in keys and keys[ord('u')] & p.KEY_IS_DOWN:
+        #     spawn_box(robot_id, distance_ahead=5, side_offset=0) 
+        #     calculate = True
+        # elif ord('j') in keys and keys[ord('j')] & p.KEY_IS_DOWN:
+        #     spawn_box(robot_id, distance_ahead=-5, side_offset=0) 
+        #     calculate = True
+        else:  # If no keys are pressed at all
             do_nothing(robot_id)
 
+        
         p.stepSimulation()
         time.sleep(1./240.)
 
