@@ -6,11 +6,11 @@ S TO GO LEFT
 E TO GO FORWARDS  
 D TO GO BACKWARDS  
 
-K TO SPAWN BOX ON THE RIGHT           
+BOX IS NOW SPAWNED RANDOMLY WITH EACH COLLISION    
+~~K TO SPAWN BOX ON THE RIGHT           
 H TO SPAWN BOX ON THE LEFT    
 U TO SPAWN BOX IN THE FRONT  
-J TO SPAWN BOX IN THE BACK  
-
+J TO SPAWN BOX IN THE BACK~~  
 **Note:** The simulation is not sensitive enough to detect keystrokes for the box spawn if the key is pressed very briefly, try to press the key for half a second to make sure the box spawns.
 
 # Code Documentation (For the basic.py file)
@@ -20,6 +20,8 @@ The global variables and functions are listed alphabetically.
 Determines whether real time distance and angle calculation between the robot and the box should be done. Set to True after a box is spawned.
 ### last_box_id 
 Keeps track of the current goal box that is present.
+### last_box_position  
+Keeps track of the last box position in order to detect collision when the current x or y position are different from that last position.
 ### prismatic_joints
 Indices of the prismatic joints for each leg
 ### rotational_joints
@@ -34,7 +36,11 @@ Indices of the rotational joints for each leg
 The line at the end of the function can be un-commented to also return the angle and distance values so that these values can be used for point calculation or anything else.
 
 ### control_robot_with_keys(robot_id)
-**Description:** Controls the robot's movements and the direction of the goal box's spawn according to the keybinds given at the beginning of this README file.  
+**Description:** Controls the robot's movements with the keybinds given at the beginning of this README file.  
+**robot_id:** urdf of the robot  
+
+### detect_collision(robot_id)
+**Description:** Detects whether a collision has occured between the robot and the box based on whether the x or y component of the box has been changed.  
 **robot_id:** urdf of the robot  
 
 ### do_nothing(robot_id)
@@ -65,7 +71,7 @@ The line at the end of the function can be un-commented to also return the angle
 **speed:** Speed of the leg movements  
 **steps_per_cycle:** How long the legs will be stationary before performing the next rotational movement cycle. This is an alternate way to control the speed of the rotation than the **speed** parameter. This value prevents the legs from trying to rotate prematurely before they have made contact with the ground after the previous rotational cycle.
 
-### spawn_box_in_direction_of_motion(robot_id, distance_ahead=1.0, side_offset = 0)
+### spawn_box(robot_id, distance_ahead=1.0, side_offset = 0)
 **Description:** Spawns the goal box in the desired location relative the the robot.  
 **robot_id:** urdf of the robot  
 **distance_ahead:** The desired forward distance of the box relative to the robot, in the direction the robot is facing.  
