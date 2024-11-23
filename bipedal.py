@@ -1,3 +1,4 @@
+
 import pybullet as p
 import pybullet_data
 import time
@@ -32,8 +33,8 @@ for joint in range(num_joints):
     p.changeDynamics(boxId, joint, lateralFriction=10.0)
 
 # Indices for the joints in the bipedal robot
-rotational_joints = [1, 3]  # Indices of the rotational joints for each leg
-prismatic_joints = [0, 2]  # Indices of the prismatic joints for each leg
+rotational_joints = [1, 4]  # Indices of the rotational joints for each leg
+prismatic_joints = [0, 3]  # Indices of the prismatic joints for each leg
 
 # Function to update the camera to follow the robot
 def update_camera(robot_id, camera_distance=2):
@@ -51,7 +52,7 @@ def update_camera(robot_id, camera_distance=2):
     )
 
 # Function to move joints with velocity control for smoother motion
-def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force, prismatic_force=50):
+def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force, prismatic_force=100):
     # Move prismatic joints (vertical movement)
     for joint_index, position in enumerate(prismatic_positions):
         p.setJointMotorControl2(
@@ -74,51 +75,60 @@ def move_joints(robot_id, prismatic_positions, rotational_positions, rotational_
         )
 
 # Function to perform a gait for the bipedal robot
-def perform_gait(robot_id, num_joints, step_length=0.3, step_height=0.1, speed=0.1):
-    phase_offset = math.pi
+def perform_gait(robot_id, step_length=0.3, step_height=0.1, speed=0.1):
     time_step = 0
-    
-    start_time = time.time()
+
+    # Use a fixed phase offset of pi (180 degrees) between the two legs for proper alternation
     while True:
         time_step += speed
         prismatic_positions = [0] * len(prismatic_joints)
         rotational_positions = [0] * len(rotational_joints)
-
-        # Alternate legs for a basic walking gait
+        
+        # Create a basic phase offset (ensure they alternate every 180 degrees)
+        phase_offset = math.pi  # Half cycle offset for alternating legs
+        
+        prismatic_offset = math.pi / 2
+        # Left leg moves according to sin(time_step), right leg moves with an offset
         rotational_positions[0] = step_length * math.sin(time_step)  # Left leg
         rotational_positions[1] = step_length * math.sin(time_step + phase_offset)  # Right leg
-        prismatic_positions[0] = step_height if math.sin(time_step) > 0 else 0  # Lift or push down left leg
-        prismatic_positions[1] = step_height if math.sin(time_step - phase_offset) > 0 else 0  # Lift or push down right leg
+        
+        # Lift or push down the legs with sine wave for step height
+        prismatic_positions[0] = step_height if math.sin(time_step + prismatic_offset) > 0 else 0  # Left leg
+        prismatic_positions[1] = step_height if math.sin(time_step + phase_offset + prismatic_offset) > 0 else 0  # Right leg
 
-        # Apply joint movements
-        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force=600)
+        # Apply joint movements to the robot
+        move_joints(robot_id, prismatic_positions, rotational_positions, rotational_force=350)
 
-        # Step the simulation and update the camera
+        # Step the simulation
         p.stepSimulation()
-        update_camera(robot_id)
-        time.sleep(1./240.)
 
+        # Update the camera for visualization
+        update_camera(robot_id)
+
+        # Sleep to maintain the simulation step rate
+        time.sleep(1./120.)
+
+        # Listen for key events and break the loop if 'e' or 'd' is pressed
         keys = p.getKeyboardEvents()
         if ord('e') not in keys and ord('d') not in keys:  # Exit loop when no direction keys are pressed
             break
 
 # Function to control the robot with keys
-def control_robot_with_keys(robot_id, num_joints):
+def control_robot_with_keys(robot_id):
     while True:
         keys = p.getKeyboardEvents()
-
         # E TO MOVE FORWARDS
         if ord('e') in keys and keys[ord('e')] & p.KEY_IS_DOWN:
-            perform_gait(robot_id, num_joints, step_length=0.3, step_height=0.2, speed=0.4)
+            perform_gait(robot_id,  step_length=0.4, step_height=0.3, speed=0.3)
         # D TO MOVE BACKWARDS
         elif ord('d') in keys and keys[ord('d')] & p.KEY_IS_DOWN:
-            perform_gait(robot_id, num_joints, step_length=-0.3, step_height=0.2, speed=0.4)
+            perform_gait(robot_id,  step_length=0.4, step_height=0.3, speed=0.4)
 
         p.stepSimulation()
-        time.sleep(1./240.)
+        time.sleep(1/120)
 
 # Start controlling the robot with keys
-control_robot_with_keys(boxId, num_joints)
+control_robot_with_keys(boxId)
 
 # Get and print the final position and orientation of the robot
 cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
