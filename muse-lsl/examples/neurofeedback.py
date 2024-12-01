@@ -133,6 +133,15 @@ if __name__ == "__main__":
             # Simple redout of alpha power, divided by delta waves in order to rule out noise
             alpha_metric = smooth_band_powers[Band.Alpha] / \
                 smooth_band_powers[Band.Delta]
+
+            threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
+            if (alpha_metric > 0.5):
+                data = 1
+            else:
+                data = 0
+            with open("../../shared_data.txt", "w") as f:
+                f.write(str(data))
+
             print('Alpha Relaxation: ', alpha_metric)
 
             # Beta Protocol :
