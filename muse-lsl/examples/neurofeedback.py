@@ -134,22 +134,28 @@ if __name__ == "__main__":
             alpha_metric = smooth_band_powers[Band.Alpha] / \
                 smooth_band_powers[Band.Delta]
 
-            threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
-            if (alpha_metric > 0.5):
-                data = 1
-            else:
-                data = 0
-            with open("../../shared_data.txt", "w") as f:
-                f.write(str(data))
+            
 
             print('Alpha Relaxation: ', alpha_metric)
 
             # Beta Protocol :
             # Beta waves have been used as a measure of mental activity and concentration
             # This beta over theta ratio is commonly used as neurofeedback for ADHD
-            # beta_metric = smooth_band_powers[Band.Beta] / \
-            #     smooth_band_powers[Band.Theta]
-            # print('Beta Concentration: ', beta_metric)
+            beta_metric = smooth_band_powers[Band.Beta] / \
+                smooth_band_powers[Band.Theta]
+            print('Beta Concentration: ', beta_metric)
+
+
+            threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
+            #aprint(alpha_metric)
+            if (abs(beta_metric / alpha_metric  ) > threshold):
+                data = 1
+            else:
+                data = 0
+            print(data)
+            with open("shared_data.txt", "w") as f:
+                f.write(str(data))
+
 
             # Alpha/Theta Protocol:
             # This is another popular neurofeedback metric for stress reduction
