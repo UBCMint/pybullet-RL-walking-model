@@ -314,9 +314,10 @@ def detect_collision(robot_id):
 def control_robot_with_keys(robot_id):
     global calculate
     spawn_box(robot_id, distance_ahead=2, side_offset=0) 
+    keys = [3.6]
     calculate = True
     while True:
-        keys = p.getKeyboardEvents()
+        
         # F TO GO RIGHT
         if ord('f') in keys and keys[ord('f')] & p.KEY_IS_DOWN:
             rotate(robot_id, direction = True, step_height=0.2, rotation_angle=math.pi / 4)
@@ -349,6 +350,7 @@ def control_robot_with_keys(robot_id):
         
         p.stepSimulation()
         time.sleep(1./240.)
+        keys = p.getKeyboardEvents()
 
         
 
