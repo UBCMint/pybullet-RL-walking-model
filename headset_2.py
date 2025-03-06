@@ -5,6 +5,9 @@ import os
 import math
 import numpy as np
 import random
+import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Set up PyBullet environment
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -327,17 +330,29 @@ def control_robot_with_keys(robot_id):
     while True:
         with open("shared_data.txt", "r") as f:
             headset_data = f.read()
+
+        # url = "http://50b4-206-87-120-166.ngrok-free.app/shared_data.txt"
+
+        # try:
+        #     response = requests.get(url, verify=False)
+
+        #     response.raise_for_status()  # Raise an error if the request failed
+        #     headset_data = response.text
+        # except requests.exceptions.RequestException as e:
+        #     print(f"Error fetching data: {e}")
+    
         # print("read " + headset_data + " from shared_data.txt")
+        
         if headset_data == "1":
             perform_trot_gait(boxId, step_length=0.3, step_height=0.2, speed=0.4)
         elif headset_data == "0":
             perform_trot_gait(boxId, step_length=-0.3, step_height=0.2, speed=0.4)
         else:
             do_nothing(robot_id)
-
+        print(headset_data)
         
         p.stepSimulation()
-        time.sleep(1./240.)
+        time.sleep(1./50.)
         keys = p.getKeyboardEvents()
 
         
