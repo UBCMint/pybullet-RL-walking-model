@@ -126,25 +126,54 @@ if __name__ == "__main__":
             # print('Delta: ', band_powers[Band.Delta], ' Theta: ', band_powers[Band.Theta],
             #       ' Alpha: ', band_powers[Band.Alpha], ' Beta: ', band_powers[Band.Beta])
 
-            """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
-            # These metrics could also be used to drive brain-computer interfaces
+            # """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
+            # # These metrics could also be used to drive brain-computer interfaces
 
-            # Alpha Protocol:
-            # Simple redout of alpha power, divided by delta waves in order to rule out noise
-            alpha_metric = smooth_band_powers[Band.Alpha] / \
-                smooth_band_powers[Band.Delta]
+            # # Alpha Protocol:
+            # # Simple readout of alpha power, divided by delta waves in order to rule out noise
+            # alpha_metric = smooth_band_powers[Band.Alpha] / \
+            #     smooth_band_powers[Band.Delta]
+            # rachel_metric = smooth_band_powers[Band.Delta]
 
             
 
+            # print('Alpha Relaxation: ', alpha_metric)
+
+            # # Beta Protocol :
+            # # Beta waves have been used as a measure of mental activity and concentration
+            # # This beta over theta ratio is commonly used as neurofeedback for ADHD
+            # beta_metric = smooth_band_powers[Band.Beta] / \
+            #     smooth_band_powers[Band.Theta]
+            # print('Beta Concentration: ', beta_metric)
+
+
+            # threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
+            # #aprint(alpha_metric)
+            # if (abs(beta_metric / alpha_metric  ) > threshold):
+            #     data = 1
+            # else:
+            #     data = 0
+            # print(data)
+            # with open("shared_data.txt", "w") as f:
+            #     f.write(str(data))
+
+
+            # # Alpha/Theta Protocol:
+            # # This is another popular neurofeedback metric for stress reduction
+            # # Higher theta over alpha is supposedly associated with reduced anxiety
+            # # theta_metric = smooth_band_powers[Band.Theta] / \
+            # #     smooth_band_powers[Band.Alpha]
+            # # print('Theta Relaxation: ', theta_metric)
+
+            """ 3.4 NEUROFEEDBACK CALIBRATION """
+            # Metrics calibrated to individual
+            alpha_metric = smooth_band_powers[Band.Alpha] / \
+                smooth_band_powers[Band.Delta]
             print('Alpha Relaxation: ', alpha_metric)
 
-            # Beta Protocol :
-            # Beta waves have been used as a measure of mental activity and concentration
-            # This beta over theta ratio is commonly used as neurofeedback for ADHD
             beta_metric = smooth_band_powers[Band.Beta] / \
                 smooth_band_powers[Band.Theta]
             print('Beta Concentration: ', beta_metric)
-
 
             threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
             #aprint(alpha_metric)
@@ -155,14 +184,6 @@ if __name__ == "__main__":
             print(data)
             with open("shared_data.txt", "w") as f:
                 f.write(str(data))
-
-
-            # Alpha/Theta Protocol:
-            # This is another popular neurofeedback metric for stress reduction
-            # Higher theta over alpha is supposedly associated with reduced anxiety
-            # theta_metric = smooth_band_powers[Band.Theta] / \
-            #     smooth_band_powers[Band.Alpha]
-            # print('Theta Relaxation: ', theta_metric)
 
     except KeyboardInterrupt:
         print('Closing!')
