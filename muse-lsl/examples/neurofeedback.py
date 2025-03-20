@@ -126,62 +126,35 @@ if __name__ == "__main__":
             # print('Delta: ', band_powers[Band.Delta], ' Theta: ', band_powers[Band.Theta],
             #       ' Alpha: ', band_powers[Band.Alpha], ' Beta: ', band_powers[Band.Beta])
 
-            # """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
-            # # These metrics could also be used to drive brain-computer interfaces
+            """ 3.3 COMPUTE NEUROFEEDBACK METRICS """
 
-            # # Alpha Protocol:
-            # # Simple readout of alpha power, divided by delta waves in order to rule out noise
-            # alpha_metric = smooth_band_powers[Band.Alpha] / \
-            #     smooth_band_powers[Band.Delta]
-            # rachel_metric = smooth_band_powers[Band.Delta]
+            # Adding Gamma to Beta might increase accuracy for focus
+            # beta_metric = smooth_band_powers[Band.Beta] # Delay due to averaging
+            print('Beta band power: ', band_powers[Band.Beta])
+            print('Beta band buffer: ', band_buffer[Band.Beta])
+            # print('Beta: ', beta_metric)
+            # threshold = 0.0
 
-            
+            # Questionable metric as it doesn't reflect research
+            theta_metric = smooth_band_powers[Band.Theta] 
+            # print('Theta: ', theta_metric)
+            # threshold = 1.0
 
-            # print('Alpha Relaxation: ', alpha_metric)
+            # Questionable metric as it doesn't reflect research
+            delta_metric = smooth_band_powers[Band.Delta] 
+            # print('Delta: ', delta_metric)
+            # threshold = 1.0
 
-            # # Beta Protocol :
-            # # Beta waves have been used as a measure of mental activity and concentration
-            # # This beta over theta ratio is commonly used as neurofeedback for ADHD
-            # beta_metric = smooth_band_powers[Band.Beta] / \
-            #     smooth_band_powers[Band.Theta]
-            # print('Beta Concentration: ', beta_metric)
-
-
-            # threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
-            # #aprint(alpha_metric)
-            # if (abs(beta_metric / alpha_metric  ) > threshold):
-            #     data = 1
+            # threshold = 0.0  
+            # if (beta_metric > threshold):
+            #     print('Active')
+            #     data = 1 
             # else:
+            #     print('Relaxed')
             #     data = 0
             # print(data)
             # with open("shared_data.txt", "w") as f:
             #     f.write(str(data))
-
-
-            # # Alpha/Theta Protocol:
-            # # This is another popular neurofeedback metric for stress reduction
-            # # Higher theta over alpha is supposedly associated with reduced anxiety
-            # # theta_metric = smooth_band_powers[Band.Theta] / \
-            # #     smooth_band_powers[Band.Alpha]
-            # # print('Theta Relaxation: ', theta_metric)
-
-            """ 3.4 NEUROFEEDBACK CALIBRATION """
-            # Metrics calibrated to individual
-            # Including Gamma would make it more accurate but current muse-lsl doesn't read that, may need to request
-            # beta_metric = smooth_band_powers[Band.Beta] # Delay due to averaging
-            beta_metric = band_buffer[Band.Beta] # Reduced delay but noisier
-            print('Beta: ', beta_metric)
-
-            threshold = 0.0  
-            if (beta_metric > threshold):
-                print('Active')
-                data = 1 
-            else:
-                print('Relaxed')
-                data = 0
-            print(data)
-            with open("shared_data.txt", "w") as f:
-                f.write(str(data))
 
     except KeyboardInterrupt:
         print('Closing!')
