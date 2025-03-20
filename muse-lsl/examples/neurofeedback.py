@@ -167,19 +167,17 @@ if __name__ == "__main__":
 
             """ 3.4 NEUROFEEDBACK CALIBRATION """
             # Metrics calibrated to individual
-            alpha_metric = smooth_band_powers[Band.Alpha] / \
-                smooth_band_powers[Band.Delta]
-            print('Alpha Relaxation: ', alpha_metric)
+            # Including Gamma would make it more accurate but current muse-lsl doesn't read that, may need to request
+            # beta_metric = smooth_band_powers[Band.Beta] # Delay due to averaging
+            beta_metric = band_buffer[Band.Beta] # Reduced delay but noisier
+            print('Beta: ', beta_metric)
 
-            beta_metric = smooth_band_powers[Band.Beta] / \
-                smooth_band_powers[Band.Theta]
-            print('Beta Concentration: ', beta_metric)
-
-            threshold = 0.5  # PLACEHOLDER VALUE FOR NOW
-            #aprint(alpha_metric)
-            if (abs(beta_metric / alpha_metric  ) > threshold):
-                data = 1
+            threshold = 0.0  
+            if (beta_metric > threshold):
+                print('Active')
+                data = 1 
             else:
+                print('Relaxed')
                 data = 0
             print(data)
             with open("shared_data.txt", "w") as f:
